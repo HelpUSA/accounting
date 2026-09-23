@@ -27,10 +27,21 @@ import {
   ArrowUp,
   ArrowDown,
   Calendar,
-  FilterX
+  FilterX,
+  PackageCheck,
+  Truck,
+  FileCode,
+  FileText,
+  Landmark,
+  CheckCircle2,
+  FileDown
 } from 'lucide-react';
 import { NfseItem } from '@/lib/xml-parser';
 import { generateDanfseHtml } from '@/lib/danfse-generator';
+import { NfeItem, generateDanfeHtml } from '@/lib/nfe-client';
+import { CteItem, generateDacteHtml } from '@/lib/cte-client';
+import { ReinfSummary } from '@/lib/reinf-generator';
+import { BankTransaction, ConciliacaoSummary } from '@/lib/ofx-parser';
 import { formatCurrency, safeNum } from '@/lib/formatters';
 import { Language, translations } from '@/lib/i18n';
 
@@ -43,6 +54,7 @@ interface CertMetadata {
   valid: boolean;
 }
 
+type ModuleType = 'nfse' | 'nfe' | 'cte' | 'reinf' | 'sped' | 'conciliacao';
 type SortField = 'tipo' | 'numero' | 'dataEmissao' | 'prestadorNome' | 'tomadorNome' | 'valorServicos' | 'valorIss';
 type SortOrder = 'asc' | 'desc';
 
@@ -50,6 +62,10 @@ export default function AccountingPortalPage() {
   const [lang, setLang] = useState<Language>('pt');
   const t = translations[lang];
 
+  // Active Module tab
+  const [activeModule, setActiveModule] = useState<ModuleType>('nfse');
+
+  // Cert State
   const [certInfo, setCertInfo] = useState<CertMetadata | null>(null);
   const [pfxBase64, setPfxBase64] = useState<string>('');
   const [passphrase, setPassphrase] = useState<string>('');
@@ -57,24 +73,42 @@ export default function AccountingPortalPage() {
   const [loadingCert, setLoadingCert] = useState<boolean>(false);
   const [certError, setCertError] = useState<string>('');
 
-  // Query & Filter state
+  // Module 1: NFS-e State
   const [filterTipo, setFilterTipo] = useState<'todas' | 'prestada' | 'tomada'>('todas');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  
-  const [items, setItems] = useState<NfseItem[]>([]);
+  const [nfseItems, setNfseItems] = useState<NfseItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loadingQuery, setLoadingQuery] = useState<boolean>(false);
   const [downloadingZip, setDownloadingZip] = useState<boolean>(false);
+
+  // Module 2: NF-e Produtos State
+  const [nfeItems, setNfeItems] = useState<NfeItem[]>([]);
+  const [loadingNfe, setLoadingNfe] = useState<boolean>(false);
+
+  // Module 3: CT-e Transporte State
+  const [cteItems, setCteItems] = useState<CteItem[]>([]);
+  const [loadingCte, setLoadingCte] = useState<boolean>(false);
+
+  // Module 4: EFD-Reinf State
+  const [reinfSummary, setReinfSummary] = useState<ReinfSummary | null>(null);
+  const [loadingReinf, setLoadingReinf] = useState<boolean>(false);
+
+  // Module 5: SPED Fiscal State
+  const [loadingSped, setLoadingSped] = useState<boolean>(false);
+
+  // Module 6: Conciliação OFX State
+  const [conciliacaoSummary, setConciliacaoSummary] = useState<ConciliacaoSummary | null>(null);
+  const [loadingConciliacao, setLoadingConciliacao] = useState<boolean>(false);
 
   // Column Sorting state
   const [sortField, setSortField] = useState<SortField>('dataEmissao');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // Modal preview state
-  const [previewItem, setPreviewItem] = useState<NfseItem | null>(null);
-  const [previewTab, setPreviewTab] = useState<'danfse' | 'xml'>('danfse');
+  const [previewItem, setPreviewItem] = useState<{ type: 'danfse' | 'danfe' | 'dacte'; item: any } | null>(null);
+  const [previewTab, setPreviewTab] = useState<'graphic' | 'xml'>('graphic');
 
   // Modais de informação
   const [showManualModal, setShowManualModal] = useState<boolean>(false);
@@ -127,7 +161,7 @@ export default function AccountingPortalPage() {
       const data = await res.json();
       if (data.success && data.cert) {
         setCertInfo(data.cert);
-        fetchNotes({ pfxBase64, passphrase });
+        fetchAllModules({ pfxBase64, passphrase, certInfo: data.cert });
       } else {
         setCertError(data.error || 'Senha incorreta ou certificado inválido.');
       }
@@ -138,8 +172,15 @@ export default function AccountingPortalPage() {
     }
   };
 
-  // Fetch Notes
-  const fetchNotes = async (paramsOverride?: any) => {
+  // Fetch all modules data
+  const fetchAllModules = async (params?: any) => {
+    fetchNfseNotes(params);
+    fetchNfeNotes(params);
+    fetchCteNotes(params);
+  };
+
+  // Fetch NFS-e
+  const fetchNfseNotes = async (paramsOverride?: any) => {
     setLoadingQuery(true);
     try {
       const payload = {
@@ -157,7 +198,7 @@ export default function AccountingPortalPage() {
       });
       const data = await res.json();
       if (data.success && data.queryResult) {
-        setItems(data.queryResult.items || []);
+        setNfseItems(data.queryResult.items || []);
         setSelectedIds(new Set((data.queryResult.items || []).map((i: NfseItem) => i.id)));
       }
     } catch (err) {
@@ -167,9 +208,133 @@ export default function AccountingPortalPage() {
     }
   };
 
+  // Fetch NF-e Produtos
+  const fetchNfeNotes = async (paramsOverride?: any) => {
+    setLoadingNfe(true);
+    try {
+      const payload = { pfxBase64, passphrase, ...paramsOverride };
+      const res = await fetch('/api/nfe/consultar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNfeItems(data.items || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingNfe(false);
+    }
+  };
+
+  // Fetch CT-e Fretes
+  const fetchCteNotes = async (paramsOverride?: any) => {
+    setLoadingCte(true);
+    try {
+      const payload = { pfxBase64, passphrase, ...paramsOverride };
+      const res = await fetch('/api/cte/consultar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCteItems(data.items || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingCte(false);
+    }
+  };
+
+  // Generate EFD-Reinf
+  const handleGenerateReinf = async () => {
+    setLoadingReinf(true);
+    try {
+      const res = await fetch('/api/reinf/gerar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: nfseItems,
+          cnpj: certInfo?.cnpj || 'Empresa',
+          companyName: certInfo?.companyName || 'Empresa'
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReinfSummary(data.summary);
+      }
+    } catch (err: any) {
+      alert('Erro ao gerar EFD-Reinf: ' + err.message);
+    } finally {
+      setLoadingReinf(false);
+    }
+  };
+
+  // Download SPED Fiscal .txt
+  const handleDownloadSped = async () => {
+    setLoadingSped(true);
+    try {
+      const res = await fetch('/api/sped/gerar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cnpj: certInfo?.cnpj || 'Empresa',
+          companyName: certInfo?.companyName || 'Empresa',
+          items: nfseItems
+        }),
+      });
+
+      if (!res.ok) throw new Error('Falha ao gerar arquivo SPED.');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SPED_FISCAL_${certInfo?.cnpj || 'EFD'}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      alert('Erro ao baixar SPED Fiscal: ' + err.message);
+    } finally {
+      setLoadingSped(false);
+    }
+  };
+
+  // Process OFX / CSV Bank Statement
+  const handleOfxFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoadingConciliacao(true);
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const content = evt.target?.result?.toString() || '';
+      try {
+        const res = await fetch('/api/conciliacao/processar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileContent: content })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setConciliacaoSummary(data.summary);
+        }
+      } catch (err: any) {
+        alert('Erro ao processar extrato bancário: ' + err.message);
+      } finally {
+        setLoadingConciliacao(false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   useEffect(() => {
     if (certInfo) {
-      fetchNotes();
+      fetchNfseNotes();
     }
   }, [filterTipo]);
 
@@ -190,14 +355,6 @@ export default function AccountingPortalPage() {
     setEndDate(lastDayLastMonth);
   };
 
-  const setPreset90Days = () => {
-    const now = new Date();
-    const d90 = new Date();
-    d90.setDate(now.getDate() - 90);
-    setStartDate(d90.toISOString().split('T')[0]);
-    setEndDate(now.toISOString().split('T')[0]);
-  };
-
   const clearDates = () => {
     setStartDate('');
     setEndDate('');
@@ -213,9 +370,9 @@ export default function AccountingPortalPage() {
     }
   };
 
-  // Download ZIP / Excel
+  // Download ZIP / Excel for NFS-e
   const handleDownloadZip = async (format: 'zip' | 'excel' = 'zip') => {
-    const selectedItems = items.filter(i => selectedIds.has(i.id));
+    const selectedItems = nfseItems.filter(i => selectedIds.has(i.id));
     if (selectedItems.length === 0) {
       alert('Selecione ao menos uma NFS-e para realizar o download.');
       return;
@@ -252,20 +409,13 @@ export default function AccountingPortalPage() {
     }
   };
 
-  // Filtered items view (including date filters)
-  const filteredItems = items.filter(item => {
+  // Filtered NFS-e items
+  const filteredNfseItems = nfseItems.filter(item => {
     if (!item) return false;
     if (filterTipo === 'prestada' && item.tipo !== 'prestada') return false;
     if (filterTipo === 'tomada' && item.tipo !== 'tomada') return false;
-    
-    // Date Filtering
-    if (startDate && item.dataEmissao) {
-      if (item.dataEmissao < startDate) return false;
-    }
-    if (endDate && item.dataEmissao) {
-      if (item.dataEmissao > endDate) return false;
-    }
-
+    if (startDate && item.dataEmissao && item.dataEmissao < startDate) return false;
+    if (endDate && item.dataEmissao && item.dataEmissao > endDate) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
@@ -273,18 +423,16 @@ export default function AccountingPortalPage() {
         (item.prestadorNome || '').toLowerCase().includes(q) ||
         (item.tomadorNome || '').toLowerCase().includes(q) ||
         (item.prestadorCnpj || '').includes(q) ||
-        (item.tomadorCnpj || '').includes(q) ||
-        (item.discriminacao || '').toLowerCase().includes(q)
+        (item.tomadorCnpj || '').includes(q)
       );
     }
     return true;
   });
 
-  // Sorted items view
-  const sortedItems = [...filteredItems].sort((a, b) => {
+  // Sorted NFS-e items
+  const sortedNfseItems = [...filteredNfseItems].sort((a, b) => {
     let valA: any = a[sortField];
     let valB: any = b[sortField];
-
     if (sortField === 'valorServicos' || sortField === 'valorIss') {
       valA = safeNum(valA);
       valB = safeNum(valB);
@@ -295,24 +443,23 @@ export default function AccountingPortalPage() {
       valA = (valA || '').toString().toLowerCase();
       valB = (valB || '').toString().toLowerCase();
     }
-
     if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
     return 0;
   });
 
-  const prestadasList = filteredItems.filter(i => i.tipo === 'prestada');
-  const tomadasList = filteredItems.filter(i => i.tipo === 'tomada');
+  const prestadasList = filteredNfseItems.filter(i => i.tipo === 'prestada');
+  const tomadasList = filteredNfseItems.filter(i => i.tipo === 'tomada');
 
   const totalValPrestado = prestadasList.reduce((acc, i) => acc + safeNum(i.valorServicos), 0);
   const totalValTomado = tomadasList.reduce((acc, i) => acc + safeNum(i.valorServicos), 0);
-  const totalIss = filteredItems.reduce((acc, i) => acc + safeNum(i.valorIss), 0);
+  const totalIss = filteredNfseItems.reduce((acc, i) => acc + safeNum(i.valorIss), 0);
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === sortedItems.length) {
+    if (selectedIds.size === sortedNfseItems.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(sortedItems.map(i => i.id)));
+      setSelectedIds(new Set(sortedNfseItems.map(i => i.id)));
     }
   };
 
@@ -402,37 +549,6 @@ export default function AccountingPortalPage() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 pb-28">
         
-        {/* Banner Explicativo de Módulo e Futuras Funcionalidades */}
-        <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-            <div className="space-y-1.5 max-w-3xl">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="bg-amber-500 text-slate-950 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                  <Layers className="w-3 h-3" /> Módulo Ativo
-                </span>
-                <h2 className="text-sm sm:text-base font-bold text-white tracking-wide">
-                  {t.moduleBannerTitle}
-                </h2>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {t.moduleBannerDesc}
-              </p>
-              <div className="text-[11px] text-amber-400/90 font-medium flex items-center gap-1.5 pt-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>{t.moduleBannerFuture}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowManualModal(true)}
-              className="w-full md:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 shrink-0 cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4" />
-              {t.userManualBtn}
-            </button>
-          </div>
-        </section>
-
         {/* Certificate Upload & Auth Card */}
         <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 mb-5 gap-3">
@@ -445,7 +561,7 @@ export default function AccountingPortalPage() {
                   {t.certAuthTitle}
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Insira qualquer certificado digital A1 para consultar e baixar Notas Fiscais de Serviço.
+                  Insira qualquer certificado digital A1 (.pfx) para autenticar todos os 6 módulos contábeis de forma universal.
                 </p>
               </div>
             </div>
@@ -568,479 +684,764 @@ export default function AccountingPortalPage() {
                   </span>
                 </div>
                 <button
-                  onClick={() => fetchNotes()}
+                  onClick={() => fetchAllModules()}
                   disabled={loadingQuery}
                   className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shrink-0"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loadingQuery ? 'animate-spin' : ''}`} />
-                  Atualizar
+                  Sincronizar
                 </button>
               </div>
             </div>
           )}
         </section>
 
-        {/* Dashboards & Notes Table */}
-        {certInfo && (
-          <>
-            {/* KPI Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    {t.kpiTotalNotes}
-                  </span>
-                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
-                    <FileCheck2 className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <span className="text-2xl font-black text-white">{sortedItems.length}</span>
-                  <span className="text-xs text-slate-400 ml-1.5">{t.kpiNotesLabel}</span>
-                </div>
-              </div>
+        {/* 6-MODULE NAVIGATION TAB BAR */}
+        <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-2xl flex items-center overflow-x-auto gap-1 text-xs font-semibold shadow-xl scrollbar-none">
+          <button
+            onClick={() => setActiveModule('nfse')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer shrink-0 ${
+              activeModule === 'nfse'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            {t.modNfse}
+          </button>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                    {t.kpiIssuedVal}
-                  </span>
-                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-                    <ArrowUpRight className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <span className="text-xl font-black text-emerald-400">
-                    {formatCurrency(totalValPrestado)}
-                  </span>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssuedSub}</p>
-                </div>
-              </div>
+          <button
+            onClick={() => setActiveModule('nfe')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer shrink-0 ${
+              activeModule === 'nfe'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <PackageCheck className="w-4 h-4" />
+            {t.modNfe}
+          </button>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
-                    {t.kpiReceivedVal}
-                  </span>
-                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
-                    <ArrowDownLeft className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <span className="text-xl font-black text-amber-400">
-                    {formatCurrency(totalValTomado)}
-                  </span>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiReceivedSub}</p>
-                </div>
-              </div>
+          <button
+            onClick={() => setActiveModule('cte')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer shrink-0 ${
+              activeModule === 'cte'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            {t.modCte}
+          </button>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
-                    {t.kpiTotalIss}
-                  </span>
-                  <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <span className="text-xl font-black text-indigo-400">
-                    {formatCurrency(totalIss)}
-                  </span>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssSub}</p>
-                </div>
-              </div>
-            </div>
+          <button
+            onClick={() => setActiveModule('reinf')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer shrink-0 ${
+              activeModule === 'reinf'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <FileCode className="w-4 h-4" />
+            {t.modReinf}
+          </button>
 
-            {/* Filter Toolbar: Tipo + Date Range Filter + Search + Export */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
-              
-              {/* Row 1: Tipo Filter + Date Range Picker + Presets */}
-              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-                
-                {/* Tipo Filter Tabs */}
-                <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs font-semibold shrink-0">
-                  <button
-                    onClick={() => setFilterTipo('todas')}
-                    className={`flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
-                      filterTipo === 'todas'
-                        ? 'bg-amber-500 text-slate-950 font-bold'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {t.filterAll}
-                  </button>
-                  <button
-                    onClick={() => setFilterTipo('prestada')}
-                    className={`flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
-                      filterTipo === 'prestada'
-                        ? 'bg-amber-500 text-slate-950 font-bold'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {t.filterIssued}
-                  </button>
-                  <button
-                    onClick={() => setFilterTipo('tomada')}
-                    className={`flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
-                      filterTipo === 'tomada'
-                        ? 'bg-amber-500 text-slate-950 font-bold'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {t.filterReceived}
-                  </button>
-                </div>
+          <button
+            onClick={() => setActiveModule('sped')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer shrink-0 ${
+              activeModule === 'sped'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            {t.modSped}
+          </button>
 
-                {/* Date Range Selection Box */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-amber-400 ml-1 shrink-0" />
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-slate-400 font-semibold">{t.startDate}:</span>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="bg-slate-900 border border-slate-700 text-white text-xs px-2 py-1 rounded-lg outline-none focus:border-amber-500 transition font-mono"
-                      />
+          <button
+            onClick={() => setActiveModule('conciliacao')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer shrink-0 ${
+              activeModule === 'conciliacao'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Landmark className="w-4 h-4" />
+            {t.modConciliacao}
+          </button>
+        </div>
+
+        {/* ---------------------------------------------------- */}
+        {/* MODULE 1: NFS-E (NOTAS FISCAIS DE SERVIÇO)           */}
+        {/* ---------------------------------------------------- */}
+        {activeModule === 'nfse' && (
+          <div className="space-y-6">
+            {/* Universal Header Banner for NFS-e */}
+            <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-5 shadow-xl">
+              <h2 className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2">
+                <FileText className="w-4 h-4 text-amber-400" />
+                {t.bannerNfseTitle}
+              </h2>
+              <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                {t.bannerNfseDesc}
+              </p>
+            </section>
+
+            {certInfo ? (
+              <>
+                {/* KPI Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        {t.kpiTotalNotes}
+                      </span>
+                      <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+                        <FileCheck2 className="w-4 h-4" />
+                      </div>
                     </div>
-                    <span className="text-slate-500 font-bold">-</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-slate-400 font-semibold">{t.endDate}:</span>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="bg-slate-900 border border-slate-700 text-white text-xs px-2 py-1 rounded-lg outline-none focus:border-amber-500 transition font-mono"
-                      />
+                    <div className="mt-3">
+                      <span className="text-2xl font-black text-white">{sortedNfseItems.length}</span>
+                      <span className="text-xs text-slate-400 ml-1.5">{t.kpiNotesLabel}</span>
                     </div>
                   </div>
 
-                  {/* Date Quick Presets & Clear */}
-                  <div className="flex items-center gap-1.5 pt-1 sm:pt-0 sm:border-l border-slate-800 sm:pl-2">
-                    <button
-                      onClick={setPresetThisMonth}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer"
-                    >
-                      Este Mês
-                    </button>
-                    <button
-                      onClick={setPresetLastMonth}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer"
-                    >
-                      Mês Anterior
-                    </button>
-                    <button
-                      onClick={setPreset90Days}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer hidden sm:block"
-                    >
-                      90 Dias
-                    </button>
-                    {(startDate || endDate) && (
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                        {t.kpiIssuedVal}
+                      </span>
+                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <ArrowUpRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <span className="text-xl font-black text-emerald-400">
+                        {formatCurrency(totalValPrestado)}
+                      </span>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssuedSub}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                        {t.kpiReceivedVal}
+                      </span>
+                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                        <ArrowDownLeft className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <span className="text-xl font-black text-amber-400">
+                        {formatCurrency(totalValTomado)}
+                      </span>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiReceivedSub}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
+                        {t.kpiTotalIss}
+                      </span>
+                      <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <span className="text-xl font-black text-indigo-400">
+                        {formatCurrency(totalIss)}
+                      </span>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssSub}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Toolbar NFS-e */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
+                  <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                    <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs font-semibold shrink-0">
                       <button
-                        onClick={clearDates}
-                        title={t.clearDateFilter}
-                        className="text-red-400 hover:text-red-300 p-1 rounded-lg transition cursor-pointer"
+                        onClick={() => setFilterTipo('todas')}
+                        className={`flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
+                          filterTipo === 'todas'
+                            ? 'bg-amber-500 text-slate-950 font-bold'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
                       >
-                        <FilterX className="w-4 h-4" />
+                        {t.filterAll}
                       </button>
-                    )}
+                      <button
+                        onClick={() => setFilterTipo('prestada')}
+                        className={`flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
+                          filterTipo === 'prestada'
+                            ? 'bg-amber-500 text-slate-950 font-bold'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {t.filterIssued}
+                      </button>
+                      <button
+                        onClick={() => setFilterTipo('tomada')}
+                        className={`flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
+                          filterTipo === 'tomada'
+                            ? 'bg-amber-500 text-slate-950 font-bold'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {t.filterReceived}
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-amber-400 ml-1 shrink-0" />
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400 font-semibold">{t.startDate}:</span>
+                          <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="bg-slate-900 border border-slate-700 text-white text-xs px-2 py-1 rounded-lg outline-none focus:border-amber-500 transition font-mono"
+                          />
+                        </div>
+                        <span className="text-slate-500 font-bold">-</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400 font-semibold">{t.endDate}:</span>
+                          <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="bg-slate-900 border border-slate-700 text-white text-xs px-2 py-1 rounded-lg outline-none focus:border-amber-500 transition font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 pt-1 sm:pt-0 sm:border-l border-slate-800 sm:pl-2">
+                        <button
+                          onClick={setPresetThisMonth}
+                          className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer"
+                        >
+                          Este Mês
+                        </button>
+                        <button
+                          onClick={setPresetLastMonth}
+                          className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer"
+                        >
+                          Mês Anterior
+                        </button>
+                        {(startDate || endDate) && (
+                          <button
+                            onClick={clearDates}
+                            title={t.clearDateFilter}
+                            className="text-red-400 hover:text-red-300 p-1 rounded-lg transition cursor-pointer"
+                          >
+                            <FilterX className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-800/80">
+                    <div className="relative w-full md:w-80">
+                      <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder={t.searchPlaceholder}
+                        className="w-full bg-slate-950 border border-slate-800 text-xs text-white pl-9 pr-4 py-2.5 rounded-xl outline-none focus:border-amber-500 transition"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                      <button
+                        onClick={() => handleDownloadZip('excel')}
+                        disabled={downloadingZip || selectedIds.size === 0}
+                        className="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
+                      >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        {t.exportExcel}
+                      </button>
+                      <button
+                        onClick={() => handleDownloadZip('zip')}
+                        disabled={downloadingZip || selectedIds.size === 0}
+                        className="flex-1 md:flex-initial bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer"
+                      >
+                        <Download className={`w-4 h-4 ${downloadingZip ? 'animate-bounce' : ''}`} />
+                        {downloadingZip ? t.generatingZip : t.downloadZip}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Row 2: Search + Export Buttons */}
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-800/80">
-                {/* Search input */}
-                <div className="relative w-full md:w-80">
-                  <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={t.searchPlaceholder}
-                    className="w-full bg-slate-950 border border-slate-800 text-xs text-white pl-9 pr-4 py-2.5 rounded-xl outline-none focus:border-amber-500 transition"
-                  />
-                </div>
-
-                {/* Export Buttons */}
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                  <button
-                    onClick={() => handleDownloadZip('excel')}
-                    disabled={downloadingZip || selectedIds.size === 0}
-                    className="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
-                  >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    {t.exportExcel}
-                  </button>
-                  <button
-                    onClick={() => handleDownloadZip('zip')}
-                    disabled={downloadingZip || selectedIds.size === 0}
-                    className="flex-1 md:flex-initial bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer"
-                  >
-                    <Download className={`w-4 h-4 ${downloadingZip ? 'animate-bounce' : ''}`} />
-                    {downloadingZip ? t.generatingZip : t.downloadZip}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes Table with Interactive Column Sorting */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300 min-w-[850px]">
-                  <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 select-none">
-                    <tr>
-                      <th className="p-3.5 w-10 text-center">
-                        <input
-                          type="checkbox"
-                          checked={sortedItems.length > 0 && selectedIds.size === sortedItems.length}
-                          onChange={toggleSelectAll}
-                          className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
-                        />
-                      </th>
-                      
-                      {/* Interactive Sort Column Headers */}
-                      <th className="p-3.5">
-                        <button
-                          onClick={() => handleSort('tipo')}
-                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
-                        >
-                          <span>{t.tableType}</span>
-                          {renderSortIcon('tipo')}
-                        </button>
-                      </th>
-
-                      <th className="p-3.5">
-                        <button
-                          onClick={() => handleSort('numero')}
-                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
-                        >
-                          <span>{t.tableNum}</span>
-                          {renderSortIcon('numero')}
-                        </button>
-                      </th>
-
-                      <th className="p-3.5">
-                        <button
-                          onClick={() => handleSort('dataEmissao')}
-                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
-                        >
-                          <span>{t.tableDate}</span>
-                          {renderSortIcon('dataEmissao')}
-                        </button>
-                      </th>
-
-                      <th className="p-3.5">
-                        <button
-                          onClick={() => handleSort('prestadorNome')}
-                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
-                        >
-                          <span>{t.tablePrestador}</span>
-                          {renderSortIcon('prestadorNome')}
-                        </button>
-                      </th>
-
-                      <th className="p-3.5">
-                        <button
-                          onClick={() => handleSort('tomadorNome')}
-                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
-                        >
-                          <span>{t.tableTomador}</span>
-                          {renderSortIcon('tomadorNome')}
-                        </button>
-                      </th>
-
-                      <th className="p-3.5 text-right">
-                        <button
-                          onClick={() => handleSort('valorServicos')}
-                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold ml-auto"
-                        >
-                          <span>{t.tableValServ}</span>
-                          {renderSortIcon('valorServicos')}
-                        </button>
-                      </th>
-
-                      <th className="p-3.5 text-right">
-                        <button
-                          onClick={() => handleSort('valorIss')}
-                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold ml-auto"
-                        >
-                          <span>{t.tableIss}</span>
-                          {renderSortIcon('valorIss')}
-                        </button>
-                      </th>
-
-                      <th className="p-3.5 text-center">{t.tableActions}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {loadingQuery ? (
-                      <tr>
-                        <td colSpan={9} className="p-8 text-center text-slate-400">
-                          <RefreshCw className="w-6 h-6 animate-spin mx-auto text-amber-400 mb-2" />
-                          Consultando Portal Nacional (ADN) e Prefeituras...
-                        </td>
-                      </tr>
-                    ) : sortedItems.length === 0 ? (
-                      <tr>
-                        <td colSpan={9} className="p-8 text-center text-slate-400">
-                          Nenhuma Nota Fiscal de Serviço encontrada para os filtros selecionados.
-                        </td>
-                      </tr>
-                    ) : (
-                      sortedItems.map((item) => {
-                        const isSelected = selectedIds.has(item.id);
-                        return (
-                          <tr
-                            key={item.id}
-                            className={`hover:bg-slate-800/50 transition ${
-                              isSelected ? 'bg-amber-500/5' : ''
-                            }`}
-                          >
-                            <td className="p-3.5 text-center">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => toggleSelectItem(item.id)}
-                                className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
-                              />
-                            </td>
-                            <td className="p-3.5">
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                  item.tipo === 'prestada'
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                                }`}
-                              >
-                                {item.tipo === 'prestada' ? 'PRESTADA' : 'TOMADA'}
-                              </span>
-                            </td>
-                            <td className="p-3.5 font-mono font-bold text-white">{item.numero}</td>
-                            <td className="p-3.5 font-mono text-slate-400">{item.dataEmissao}</td>
-                            <td className="p-3.5 max-w-[200px] truncate">
-                              <div className="font-semibold text-slate-200 truncate">
-                                {item.prestadorNome}
-                              </div>
-                              <div className="text-[10px] font-mono text-slate-500">
-                                CNPJ: {item.prestadorCnpj}
-                              </div>
-                            </td>
-                            <td className="p-3.5 max-w-[200px] truncate">
-                              <div className="font-semibold text-slate-200 truncate">
-                                {item.tomadorNome}
-                              </div>
-                              <div className="text-[10px] font-mono text-slate-500">
-                                CNPJ: {item.tomadorCnpj}
-                              </div>
-                            </td>
-                            <td className="p-3.5 text-right font-mono font-bold text-slate-100">
-                              {formatCurrency(safeNum(item.valorServicos))}
-                            </td>
-                            <td className="p-3.5 text-right font-mono text-indigo-400 font-semibold">
-                              {formatCurrency(safeNum(item.valorIss))}
-                            </td>
-                            <td className="p-3.5 text-center">
-                              <button
-                                onClick={() => {
-                                  setPreviewItem(item);
-                                  setPreviewTab('danfse');
-                                }}
-                                className="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 mx-auto cursor-pointer"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                {t.btnViewDanfse}
-                              </button>
+                {/* Table NFS-e */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-300 min-w-[850px]">
+                      <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 select-none">
+                        <tr>
+                          <th className="p-3.5 w-10 text-center">
+                            <input
+                              type="checkbox"
+                              checked={sortedNfseItems.length > 0 && selectedIds.size === sortedNfseItems.length}
+                              onChange={toggleSelectAll}
+                              className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                            />
+                          </th>
+                          <th className="p-3.5">
+                            <button onClick={() => handleSort('tipo')} className="flex items-center gap-1.5 hover:text-white font-bold cursor-pointer">
+                              <span>{t.tableType}</span>{renderSortIcon('tipo')}
+                            </button>
+                          </th>
+                          <th className="p-3.5">
+                            <button onClick={() => handleSort('numero')} className="flex items-center gap-1.5 hover:text-white font-bold cursor-pointer">
+                              <span>{t.tableNum}</span>{renderSortIcon('numero')}
+                            </button>
+                          </th>
+                          <th className="p-3.5">
+                            <button onClick={() => handleSort('dataEmissao')} className="flex items-center gap-1.5 hover:text-white font-bold cursor-pointer">
+                              <span>{t.tableDate}</span>{renderSortIcon('dataEmissao')}
+                            </button>
+                          </th>
+                          <th className="p-3.5">
+                            <button onClick={() => handleSort('prestadorNome')} className="flex items-center gap-1.5 hover:text-white font-bold cursor-pointer">
+                              <span>{t.tablePrestador}</span>{renderSortIcon('prestadorNome')}
+                            </button>
+                          </th>
+                          <th className="p-3.5">
+                            <button onClick={() => handleSort('tomadorNome')} className="flex items-center gap-1.5 hover:text-white font-bold cursor-pointer">
+                              <span>{t.tableTomador}</span>{renderSortIcon('tomadorNome')}
+                            </button>
+                          </th>
+                          <th className="p-3.5 text-right">
+                            <button onClick={() => handleSort('valorServicos')} className="flex items-center gap-1.5 hover:text-white font-bold ml-auto cursor-pointer">
+                              <span>{t.tableValServ}</span>{renderSortIcon('valorServicos')}
+                            </button>
+                          </th>
+                          <th className="p-3.5 text-right">
+                            <button onClick={() => handleSort('valorIss')} className="flex items-center gap-1.5 hover:text-white font-bold ml-auto cursor-pointer">
+                              <span>{t.tableIss}</span>{renderSortIcon('valorIss')}
+                            </button>
+                          </th>
+                          <th className="p-3.5 text-center">{t.tableActions}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {loadingQuery ? (
+                          <tr>
+                            <td colSpan={9} className="p-8 text-center text-slate-400">
+                              <RefreshCw className="w-6 h-6 animate-spin mx-auto text-amber-400 mb-2" />
+                              Consultando NFS-e no Portal Nacional...
                             </td>
                           </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                        ) : sortedNfseItems.length === 0 ? (
+                          <tr>
+                            <td colSpan={9} className="p-8 text-center text-slate-400">
+                              Nenhuma NFS-e encontrada.
+                            </td>
+                          </tr>
+                        ) : (
+                          sortedNfseItems.map((item) => (
+                            <tr key={item.id} className="hover:bg-slate-800/50 transition">
+                              <td className="p-3.5 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIds.has(item.id)}
+                                  onChange={() => toggleSelectItem(item.id)}
+                                  className="rounded border-slate-700 bg-slate-900 text-amber-500 cursor-pointer"
+                                />
+                              </td>
+                              <td className="p-3.5">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.tipo === 'prestada' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+                                  {item.tipo === 'prestada' ? 'PRESTADA' : 'TOMADA'}
+                                </span>
+                              </td>
+                              <td className="p-3.5 font-mono font-bold text-white">{item.numero}</td>
+                              <td className="p-3.5 font-mono text-slate-400">{item.dataEmissao}</td>
+                              <td className="p-3.5 max-w-[200px] truncate">{item.prestadorNome}</td>
+                              <td className="p-3.5 max-w-[200px] truncate">{item.tomadorNome}</td>
+                              <td className="p-3.5 text-right font-mono font-bold text-slate-100">{formatCurrency(safeNum(item.valorServicos))}</td>
+                              <td className="p-3.5 text-right font-mono text-indigo-400 font-semibold">{formatCurrency(safeNum(item.valorIss))}</td>
+                              <td className="p-3.5 text-center">
+                                <button
+                                  onClick={() => setPreviewItem({ type: 'danfse', item })}
+                                  className="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 mx-auto cursor-pointer"
+                                >
+                                  <Eye className="w-3.5 h-3.5" /> Ver DANFSE
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="bg-slate-900/40 border border-slate-800 p-8 text-center text-slate-400 rounded-2xl">
+                {t.emptyState}
               </div>
-            </div>
-          </>
+            )}
+          </div>
         )}
 
-        {!certInfo && (
-          <section className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 sm:p-12 text-center space-y-4">
-            <div className="h-14 w-14 sm:h-16 sm:w-16 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-2xl flex items-center justify-center mx-auto">
-              <UploadCloud className="w-7 h-7 sm:w-8 sm:h-8" />
-            </div>
-            <div className="max-w-md mx-auto space-y-2">
-              <h3 className="text-sm sm:text-base font-bold text-white">
-                Pronto para consultar suas NFS-e?
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                {t.emptyState}
+        {/* ---------------------------------------------------- */}
+        {/* MODULE 2: NF-E (NOTAS FISCAIS DE PRODUTO / MERCADORIA) */}
+        {/* ---------------------------------------------------- */}
+        {activeModule === 'nfe' && (
+          <div className="space-y-6">
+            <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-5 shadow-xl">
+              <h2 className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2">
+                <PackageCheck className="w-4 h-4 text-amber-400" />
+                {t.bannerNfeTitle}
+              </h2>
+              <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                {t.bannerNfeDesc}
               </p>
+            </section>
+
+            {certInfo ? (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                  <h3 className="font-bold text-white text-sm">Notas Fiscais de Produto (SEFAZ Mercadorias)</h3>
+                  <button onClick={() => fetchNfeNotes()} className="text-xs text-amber-400 hover:underline flex items-center gap-1">
+                    <RefreshCw className="w-3.5 h-3.5" /> Atualizar SEFAZ
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-300 min-w-[850px]">
+                    <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+                      <tr>
+                        <th className="p-3.5">Nº NF-e</th>
+                        <th className="p-3.5">Chave de Acesso</th>
+                        <th className="p-3.5">Data Emissão</th>
+                        <th className="p-3.5">Fornecedor / Emitente</th>
+                        <th className="p-3.5 text-right">Valor Total (R$)</th>
+                        <th className="p-3.5 text-center">Manifestação</th>
+                        <th className="p-3.5 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {nfeItems.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-800/50 transition">
+                          <td className="p-3.5 font-mono font-bold text-white">{item.numero}</td>
+                          <td className="p-3.5 font-mono text-[11px] text-slate-400">{item.chave}</td>
+                          <td className="p-3.5 font-mono text-slate-400">{item.dataEmissao}</td>
+                          <td className="p-3.5 font-semibold text-slate-200">{item.emitenteNome}</td>
+                          <td className="p-3.5 text-right font-mono font-bold text-emerald-400">{formatCurrency(item.valorTotal)}</td>
+                          <td className="p-3.5 text-center">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.manifestacaoStatus === 'confirmada' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+                              {item.manifestacaoStatus === 'confirmada' ? 'CONFIRMADA' : 'CIÊNCIA'}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <button
+                              onClick={() => setPreviewItem({ type: 'danfe', item })}
+                              className="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 mx-auto cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Ver DANFE
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-900/40 border border-slate-800 p-8 text-center text-slate-400 rounded-2xl">
+                {t.emptyState}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ---------------------------------------------------- */}
+        {/* MODULE 3: CT-E (CONHECIMENTO DE TRANSPORTE E FRETES) */}
+        {/* ---------------------------------------------------- */}
+        {activeModule === 'cte' && (
+          <div className="space-y-6">
+            <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-5 shadow-xl">
+              <h2 className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2">
+                <Truck className="w-4 h-4 text-amber-400" />
+                {t.bannerCteTitle}
+              </h2>
+              <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                {t.bannerCteDesc}
+              </p>
+            </section>
+
+            {certInfo ? (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                  <h3 className="font-bold text-white text-sm">Conhecimentos de Transporte (CT-e Fretes)</h3>
+                  <button onClick={() => fetchCteNotes()} className="text-xs text-amber-400 hover:underline flex items-center gap-1">
+                    <RefreshCw className="w-3.5 h-3.5" /> Sincronizar Fretes
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-300 min-w-[850px]">
+                    <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+                      <tr>
+                        <th className="p-3.5">Nº CT-e</th>
+                        <th className="p-3.5">Data Emissão</th>
+                        <th className="p-3.5">Transportadora</th>
+                        <th className="p-3.5">Rota de Transporte</th>
+                        <th className="p-3.5 text-right">Valor Frete (R$)</th>
+                        <th className="p-3.5 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {cteItems.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-800/50 transition">
+                          <td className="p-3.5 font-mono font-bold text-white">{item.numero}</td>
+                          <td className="p-3.5 font-mono text-slate-400">{item.dataEmissao}</td>
+                          <td className="p-3.5 font-semibold text-slate-200">{item.transportadoraNome}</td>
+                          <td className="p-3.5 text-slate-400 font-mono">{item.rcto}</td>
+                          <td className="p-3.5 text-right font-mono font-bold text-emerald-400">{formatCurrency(item.valorFrete)}</td>
+                          <td className="p-3.5 text-center">
+                            <button
+                              onClick={() => setPreviewItem({ type: 'dacte', item })}
+                              className="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 mx-auto cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Ver DACTE
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-900/40 border border-slate-800 p-8 text-center text-slate-400 rounded-2xl">
+                {t.emptyState}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ---------------------------------------------------- */}
+        {/* MODULE 4: EFD-REINF (GERADOR DE EVENTOS R-4010/R-4020) */}
+        {/* ---------------------------------------------------- */}
+        {activeModule === 'reinf' && (
+          <div className="space-y-6">
+            <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-5 shadow-xl">
+              <h2 className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2">
+                <FileCode className="w-4 h-4 text-amber-400" />
+                {t.bannerReinfTitle}
+              </h2>
+              <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                {t.bannerReinfDesc}
+              </p>
+            </section>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-white">Gerador de Lotes EFD-Reinf (Retenções de Impostos)</h3>
+                  <p className="text-xs text-slate-400">Leitura automatizada de IRRF, PIS, COFINS, CSLL e INSS das Notas de Serviço para transmissão à Receita Federal.</p>
+                </div>
+                <button
+                  onClick={handleGenerateReinf}
+                  disabled={loadingReinf}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20 shrink-0"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loadingReinf ? 'animate-spin' : ''}`} />
+                  Processar Retenções & Gerar XMLs
+                </button>
+              </div>
+
+              {reinfSummary && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+                    <h4 className="font-bold text-amber-400 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" /> Evento R-4010 (Retenção Pessoa Física)
+                    </h4>
+                    <p className="text-xs text-slate-400">Lote compilado com retenções de IRRF sobre pagamentos a pessoas físicas.</p>
+                    <pre className="text-[10px] font-mono bg-slate-900 p-3 rounded-lg border border-slate-800 text-emerald-400 overflow-x-auto max-h-40">
+                      {reinfSummary.xmlR4010}
+                    </pre>
+                  </div>
+
+                  <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+                    <h4 className="font-bold text-amber-400 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" /> Evento R-4020 (Retenção Pessoa Jurídica)
+                    </h4>
+                    <p className="text-xs text-slate-400">Lote compilado com retenções de PIS, COFINS, CSLL e IRRF sobre PJ.</p>
+                    <pre className="text-[10px] font-mono bg-slate-900 p-3 rounded-lg border border-slate-800 text-emerald-400 overflow-x-auto max-h-40">
+                      {reinfSummary.xmlR4020}
+                    </pre>
+                  </div>
+                </div>
+              )}
             </div>
-          </section>
+          </div>
+        )}
+
+        {/* ---------------------------------------------------- */}
+        {/* MODULE 5: SPED FISCAL (EFD ICMS IPI ARQUIVO .TXT)    */}
+        {/* ---------------------------------------------------- */}
+        {activeModule === 'sped' && (
+          <div className="space-y-6">
+            <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-5 shadow-xl">
+              <h2 className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2">
+                <Layers className="w-4 h-4 text-amber-400" />
+                {t.bannerSpedTitle}
+              </h2>
+              <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                {t.bannerSpedDesc}
+              </p>
+            </section>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-white">Gerador de Arquivo SPED Fiscal (EFD ICMS IPI)</h3>
+                  <p className="text-xs text-slate-400 mt-1">Converte os documentos do período no arquivo texto .txt formatado com delimitadores em blocos (0, C, D, E, 1, 9) pronto para importação direta no PVA.</p>
+                </div>
+                <button
+                  onClick={handleDownloadSped}
+                  disabled={loadingSped}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 shrink-0 cursor-pointer"
+                >
+                  <FileDown className="w-4 h-4" />
+                  {loadingSped ? 'Gerando SPED...' : 'Baixar SPED Fiscal (.txt)'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------------------------------------------- */}
+        {/* MODULE 6: CONCILIAÇÃO BANCÁRIA (EXTRATOS OFX / CSV)   */}
+        {/* ---------------------------------------------------- */}
+        {activeModule === 'conciliacao' && (
+          <div className="space-y-6">
+            <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-5 shadow-xl">
+              <h2 className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2">
+                <Landmark className="w-4 h-4 text-amber-400" />
+                {t.bannerConciliacaoTitle}
+              </h2>
+              <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                {t.bannerConciliacaoDesc}
+              </p>
+            </section>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+              {/* File Upload Box */}
+              <div className="border-2 border-dashed border-slate-700 hover:border-amber-500 bg-slate-950 p-6 rounded-2xl text-center space-y-3 cursor-pointer transition">
+                <input
+                  type="file"
+                  accept=".ofx,.csv,.txt"
+                  onChange={handleOfxFileUpload}
+                  className="hidden"
+                  id="ofx-file-input"
+                />
+                <label htmlFor="ofx-file-input" className="cursor-pointer block space-y-2">
+                  <Landmark className="w-8 h-8 text-amber-400 mx-auto" />
+                  <h4 className="text-sm font-bold text-white">Carregar Extrato Bancário (.OFX ou .CSV)</h4>
+                  <p className="text-xs text-slate-400">Arraste ou clique para selecionar o arquivo exportado do seu banco.</p>
+                </label>
+              </div>
+
+              {/* Conciliation Table */}
+              {conciliacaoSummary && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Total Créditos</span>
+                      <p className="text-lg font-black text-emerald-400">{formatCurrency(conciliacaoSummary.totalCreditos)}</p>
+                    </div>
+                    <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Total Débitos</span>
+                      <p className="text-lg font-black text-amber-400">{formatCurrency(conciliacaoSummary.totalDebitos)}</p>
+                    </div>
+                    <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Lançamentos Conciliados</span>
+                      <p className="text-lg font-black text-white">{conciliacaoSummary.qtdConciliadas} / {conciliacaoSummary.transacoes.length}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-300 min-w-[700px]">
+                      <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="p-3">Data</th>
+                          <th className="p-3">Descrição Extrato</th>
+                          <th className="p-3 text-right">Valor (R$)</th>
+                          <th className="p-3 text-center">Status Conciliação</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {conciliacaoSummary.transacoes.map((tx) => (
+                          <tr key={tx.id} className="hover:bg-slate-900/60">
+                            <td className="p-3 font-mono">{tx.data}</td>
+                            <td className="p-3 font-semibold text-slate-200">{tx.descricao}</td>
+                            <td className={`p-3 text-right font-mono font-bold ${tx.valor > 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                              {formatCurrency(tx.valor)}
+                            </td>
+                            <td className="p-3 text-center">
+                              {tx.conciliado ? (
+                                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
+                                  ✓ Conciliado ({tx.notaRelacionada})
+                                </span>
+                              ) : (
+                                <span className="bg-slate-800 text-slate-400 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
+                                  Pendente
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </main>
 
-      {/* DANFSE / XML Preview Modal */}
+      {/* DANFSE / DANFE / DACTE Preview Modal */}
       {previewItem && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
               <div className="flex items-center gap-3">
                 <span className="font-bold text-white text-sm sm:text-base">
-                  NFS-e Nº {previewItem.numero}
+                  Documento Nº {previewItem.item.numero}
                 </span>
-                <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs px-2.5 py-0.5 rounded-full font-semibold">
-                  {previewItem.tipo === 'prestada' ? 'PRESTADA' : 'TOMADA'}
+                <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs px-2.5 py-0.5 rounded-full font-semibold uppercase">
+                  {previewItem.type}
                 </span>
               </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPreviewTab('danfse')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    previewTab === 'danfse' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {t.modalViewDanfse}
-                </button>
-                <button
-                  onClick={() => setPreviewTab('xml')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    previewTab === 'xml' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {t.modalXmlSource}
-                </button>
-
-                <button
-                  onClick={() => setPreviewItem(null)}
-                  className="text-slate-400 hover:text-white text-xl font-bold ml-4 px-2 cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
+              <button onClick={() => setPreviewItem(null)} className="text-slate-400 hover:text-white text-xl font-bold px-2 cursor-pointer">✕</button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 bg-slate-950">
-              {previewTab === 'danfse' ? (
-                <iframe
-                  srcDoc={generateDanfseHtml(previewItem)}
-                  className="w-full h-[600px] rounded-xl border border-slate-800 bg-white"
-                  title="DANFSE Preview"
-                />
-              ) : (
-                <pre className="text-xs font-mono text-emerald-400 bg-slate-900 p-4 rounded-xl border border-slate-800 overflow-x-auto whitespace-pre-wrap">
-                  {previewItem.xmlRaw}
-                </pre>
-              )}
+              <iframe
+                srcDoc={
+                  previewItem.type === 'danfse'
+                    ? generateDanfseHtml(previewItem.item)
+                    : previewItem.type === 'danfe'
+                    ? generateDanfeHtml(previewItem.item)
+                    : generateDacteHtml(previewItem.item)
+                }
+                className="w-full h-[600px] rounded-xl border border-slate-800 bg-white"
+                title="Preview"
+              />
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Manual do Usuário */}
+      {/* Modal: Manual do Usuário (6 Módulos) */}
       {showManualModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
@@ -1051,61 +1452,57 @@ export default function AccountingPortalPage() {
                   {t.manualModalTitle}
                 </h3>
               </div>
-              <button
-                onClick={() => setShowManualModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
-              >
+              <button onClick={() => setShowManualModal(false)} className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 text-xs text-slate-300 leading-relaxed">
               <div className="space-y-2 border-b border-slate-800 pb-4">
-                <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shrink-0">1</span>
-                  Autenticação com Certificado Digital A1
+                <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
+                  📋 Módulo 1: NFS-e (Notas Fiscais de Serviço)
                 </h4>
-                <p>
-                  No card superior, clique em <strong>Selecionar arquivo .pfx</strong> e escolha o certificado digital A1 da sua empresa ou cliente (.pfx ou .p12). Digite a senha da chave privada correspondente e clique no botão <strong>Autenticar & Conectar</strong>.
-                </p>
+                <p>Insira seu Certificado A1 (.pfx) e senha para consultar e baixar em lote Notas de Serviço Prestadas e Tomadas do Portal Nacional e Prefeituras.</p>
               </div>
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
-                <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shrink-0">2</span>
-                  Consulta Automática de Notas Prestadas e Tomadas
+                <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
+                  📦 Módulo 2: NF-e de Produto (SEFAZ Mercadorias)
                 </h4>
-                <p>
-                  Após a validação, a plataforma conecta-se de forma segura (mTLS) ao Portal Nacional da NFS-e (ADN) e às prefeituras integradas, exibindo o montante bruto de serviços prestados, tomados e os impostos de ISS apurados.
-                </p>
+                <p>Conecte seu Certificado A1 para buscar notas de produtos/compras emitidas contra o CNPJ da empresa, realizar Manifestação do Destinatário e baixar DANFEs.</p>
               </div>
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
-                <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shrink-0">3</span>
-                  Filtros por Período de Datas, Ordenação e Pesquisa
+                <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
+                  🚚 Módulo 3: CT-e (Conhecimento de Transporte)
                 </h4>
-                <p>
-                  Utilize os campos de <strong>Data Inicial</strong> e <strong>Data Final</strong> (ou botões de atalho <strong>Este Mês</strong>, <strong>Mês Anterior</strong>, <strong>90 Dias</strong>) para filtrar o período desejado. Clique nos cabeçalhos de coluna para ordenar a tabela e use a barra de busca por CNPJ ou nome.
-                </p>
+                <p>Liste todos os conhecimentos de frete da empresa para controlar custos logísticos e gerar DACTEs em PDF/HTML.</p>
+              </div>
+
+              <div className="space-y-2 border-b border-slate-800 pb-4">
+                <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
+                  📑 Módulo 4: EFD-Reinf (Gerador R-4010 / R-4020)
+                </h4>
+                <p>Processa as retenções na fonte (IRRF, PIS, COFINS, CSLL, INSS) e gera os lotes em XML oficiais para transmissão à Receita Federal.</p>
+              </div>
+
+              <div className="space-y-2 border-b border-slate-800 pb-4">
+                <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
+                  📊 Módulo 5: SPED Fiscal (EFD ICMS IPI .txt)
+                </h4>
+                <p>Converte as notas do mês no arquivo texto .txt normatizado do SPED Fiscal pronto para o PVA da Receita Federal.</p>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shrink-0">4</span>
-                  Download em Lote para ZIP e Planilha Excel
+                <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
+                  🏦 Módulo 6: Conciliação Bancária (OFX / CSV)
                 </h4>
-                <p>
-                  Selecione as notas desejadas nas caixas de seleção. Clique em <strong>Exportar Planilha Excel</strong> para gerar um resumo financeiro consolidado (.xlsx) ou em <strong>Baixar Pacote Completo (ZIP)</strong> para obter todos os XMLs originais e espelhos DANFSE em HTML.
-                </p>
+                <p>Arraste o extrato bancário de qualquer banco (.OFX ou .CSV) para cruzar os lançamentos com as notas fiscais e gerar relatório de fluxo de caixa.</p>
               </div>
             </div>
 
             <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
-              <button
-                onClick={() => setShowManualModal(false)}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer"
-              >
+              <button onClick={() => setShowManualModal(false)} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer">
                 Entendi
               </button>
             </div>
@@ -1124,36 +1521,18 @@ export default function AccountingPortalPage() {
                   {t.privacyModalTitle}
                 </h3>
               </div>
-              <button
-                onClick={() => setShowPrivacyModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
-              >
+              <button onClick={() => setShowPrivacyModal(false)} className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
-              <h4 className="font-bold text-white text-sm">1. Compromisso com a Segurança e LGPD</h4>
-              <p>
-                A <strong>HelpUS Technology</strong> prioriza a privacidade e a segurança dos dados fiscais dos seus clientes e parceiros. Todas as operações seguem rigorosamente a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
-              </p>
-
-              <h4 className="font-bold text-white text-sm">2. Processamento Efêmero do Certificado Digital A1</h4>
-              <p>
-                O seu Certificado Digital A1 (.pfx) e a senha da chave privada enviados nesta aplicação são processados exclusivamente na memória RAM durante a requisição de consulta mTLS. <strong>Nenhuma chave privada, certificado ou senha é armazenada em disco ou em banco de dados permanente.</strong>
-              </p>
-
-              <h4 className="font-bold text-white text-sm">3. Criptografia em Trânsito</h4>
-              <p>
-                Toda a transmissão de dados entre o seu navegador, os servidores da Vercel e o Ambiente de Distribuição Nacional (ADN) é protegida com criptografia TLS 1.3 de ponta a ponta.
-              </p>
+              <h4 className="font-bold text-white text-sm">1. Processamento Efêmero em Memória</h4>
+              <p>O seu Certificado Digital A1 (.pfx) é processado exclusivamente na memória RAM durante as chamadas mTLS aos servidores da SEFAZ e Receita Federal, com retenção zero em disco.</p>
             </div>
 
             <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
-              <button
-                onClick={() => setShowPrivacyModal(false)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer"
-              >
+              <button onClick={() => setShowPrivacyModal(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer">
                 Fechar
               </button>
             </div>
@@ -1169,25 +1548,12 @@ export default function AccountingPortalPage() {
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div className="space-y-1">
-              <h4 className="font-bold text-white text-xs">
-                {t.cookieBannerTitle}
-              </h4>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                {t.cookieBannerText}
-              </p>
+              <h4 className="font-bold text-white text-xs">{t.cookieBannerTitle}</h4>
+              <p className="text-[11px] text-slate-400 leading-relaxed">{t.cookieBannerText}</p>
             </div>
           </div>
           <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-800">
-            <button
-              onClick={() => setShowPrivacyModal(true)}
-              className="text-[11px] text-slate-400 hover:text-white underline px-2 cursor-pointer"
-            >
-              {t.privacyPolicyLink}
-            </button>
-            <button
-              onClick={handleAcceptCookies}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer"
-            >
+            <button onClick={handleAcceptCookies} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer">
               {t.cookieAcceptBtn}
             </button>
           </div>
@@ -1208,40 +1574,20 @@ export default function AccountingPortalPage() {
         </span>
       </a>
 
-      {/* Fixed Footer (Rodapé Fixo) with Official HelpUS Branding */}
+      {/* Fixed Footer */}
       <footer className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-800 bg-slate-900/90 backdrop-blur py-2.5 sm:py-3 px-4 sm:px-6 text-center text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2 text-[10px] sm:text-[11px] flex-wrap justify-center">
             <span className="font-semibold text-slate-300">{t.footerPortalName}</span>
             <span>•</span>
             <span>© 2026 {t.footerRights}</span>
-            <span>•</span>
-            <button
-              onClick={() => setShowPrivacyModal(true)}
-              className="text-slate-400 hover:text-slate-200 underline cursor-pointer"
-            >
-              {t.privacyPolicyLink}
-            </button>
           </div>
 
-          <a
-            href="https://helpusbr.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-3.5 py-1 rounded-full transition group shrink-0"
-          >
-            <span className="text-[10px] sm:text-[11px] text-slate-400 group-hover:text-slate-200 transition">
-              {t.footerDevelopedBy}
-            </span>
+          <a href="https://helpusbr.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-3.5 py-1 rounded-full transition group shrink-0">
+            <span className="text-[10px] sm:text-[11px] text-slate-400 group-hover:text-slate-200 transition">{t.footerDevelopedBy}</span>
             <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-              <img
-                src="/helpus-logo.jpg"
-                alt="HelpUS Logo"
-                className="h-4 w-4 rounded-md object-cover"
-              />
-              <span className="text-amber-400 group-hover:text-amber-300 transition">
-                HelpUS Technology
-              </span>
+              <img src="/helpus-logo.jpg" alt="HelpUS Logo" className="h-4 w-4 rounded-md object-cover" />
+              <span className="text-amber-400 group-hover:text-amber-300 transition">HelpUS Technology</span>
             </div>
           </a>
         </div>
