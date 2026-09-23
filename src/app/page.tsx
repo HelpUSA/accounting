@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import {
   FileCheck2,
   ShieldCheck,
@@ -11,18 +10,14 @@ import {
   Search,
   RefreshCw,
   Eye,
-  FileCode,
-  Calendar,
-  Filter,
-  CheckCircle2,
   AlertCircle,
   KeyRound,
   UploadCloud,
   ArrowUpRight,
   ArrowDownLeft,
-  Sparkles,
   Lock,
-  Globe
+  Globe,
+  Sparkles
 } from 'lucide-react';
 import { NfseItem } from '@/lib/xml-parser';
 import { Language, translations } from '@/lib/i18n';
@@ -36,7 +31,7 @@ interface CertMetadata {
   valid: boolean;
 }
 
-export default function NfsePortalPage() {
+export default function AccountingPortalPage() {
   const [lang, setLang] = useState<Language>('pt');
   const t = translations[lang];
 
@@ -59,32 +54,6 @@ export default function NfsePortalPage() {
   const [previewItem, setPreviewItem] = useState<NfseItem | null>(null);
   const [previewTab, setPreviewTab] = useState<'danfse' | 'xml'>('danfse');
 
-  // Handle preset load for Fabio Contador
-  const handleLoadFabioPreset = async () => {
-    setLoadingCert(true);
-    setCertError('');
-    try {
-      const res = await fetch('/api/nfse/cert-info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usePresetFabio: true }),
-      });
-      const data = await res.json();
-      if (data.success && data.cert) {
-        setCertInfo(data.cert);
-        setPassphrase('mfcont01');
-        setSelectedFileName('MFCONT CONTABILIDADE EMPRESARIAL LTDA_15547423000101- senha mfcont01.pfx');
-        fetchNotes({ usePresetFabio: true });
-      } else {
-        setCertError(data.error || 'Falha ao carregar certificado do Fábio.');
-      }
-    } catch (err: any) {
-      setCertError('Erro ao comunicar com o servidor: ' + err.message);
-    } finally {
-      setLoadingCert(false);
-    }
-  };
-
   // Handle user upload of PFX file
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -99,7 +68,7 @@ export default function NfsePortalPage() {
   };
 
   const handleValidateCert = async () => {
-    if (!pfxBase64 && !selectedFileName.includes('MFCONT')) {
+    if (!pfxBase64) {
       setCertError('Selecione um arquivo .pfx de certificado digital A1.');
       return;
     }
@@ -111,14 +80,13 @@ export default function NfsePortalPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pfxBase64,
-          passphrase,
-          usePresetFabio: selectedFileName.includes('MFCONT')
+          passphrase
         }),
       });
       const data = await res.json();
       if (data.success && data.cert) {
         setCertInfo(data.cert);
-        fetchNotes({ pfxBase64, passphrase, usePresetFabio: selectedFileName.includes('MFCONT') });
+        fetchNotes({ pfxBase64, passphrase });
       } else {
         setCertError(data.error || 'Senha incorreta ou certificado inválido.');
       }
@@ -136,7 +104,6 @@ export default function NfsePortalPage() {
       const payload = {
         pfxBase64,
         passphrase,
-        usePresetFabio: selectedFileName.includes('MFCONT'),
         tipo: filterTipo,
         ...paramsOverride
       };
@@ -178,8 +145,8 @@ export default function NfsePortalPage() {
         body: JSON.stringify({
           items: selectedItems,
           format,
-          cnpj: certInfo?.cnpj || '15547423000101',
-          companyName: certInfo?.companyName || 'MFCONT CONTABILIDADE'
+          cnpj: certInfo?.cnpj || 'Empresa',
+          companyName: certInfo?.companyName || 'Empresa'
         }),
       });
 
@@ -190,8 +157,8 @@ export default function NfsePortalPage() {
       const a = document.createElement('a');
       a.href = url;
       a.download = format === 'excel'
-        ? `NFSe_Relatorio_${certInfo?.cnpj || 'MFCONT'}.xlsx`
-        : `NFSe_Pacote_Completo_${certInfo?.cnpj || 'MFCONT'}.zip`;
+        ? `NFSe_Relatorio_${certInfo?.cnpj || 'Accounting'}.xlsx`
+        : `NFSe_Pacote_Completo_${certInfo?.cnpj || 'Accounting'}.zip`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -244,24 +211,23 @@ export default function NfsePortalPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
-      {/* Top Navigation Bar with Official MFCONT Branding */}
+      {/* Top Navigation Bar with HelpUS Accounting Branding */}
       <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <a href="https://mfcont.com.br" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group">
-            <img
-              src="https://mfcont.com.br/wp-content/uploads/2021/03/cropped-LOGO-MF.png"
-              alt="MFCONT Logo"
-              className="h-10 w-auto object-contain transition group-hover:scale-105"
-            />
-            <div className="hidden sm:block">
-              <h1 className="text-base font-bold text-white tracking-wide group-hover:text-amber-400 transition">
-                {t.portalTitle}
-              </h1>
-              <p className="text-[11px] text-amber-500/90 font-medium">
-                {t.portalSub}
-              </p>
-            </div>
-          </a>
+          <div className="h-10 w-10 rounded-xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950 font-black text-xl tracking-tighter">
+            H
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
+              {t.portalTitle}
+              <span className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" /> {t.badgeNfse}
+              </span>
+            </h1>
+            <p className="text-[11px] text-slate-400">
+              {t.portalSub}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -293,28 +259,24 @@ export default function NfsePortalPage() {
               ES
             </button>
           </div>
-
-          <button
-            onClick={handleLoadFabioPreset}
-            disabled={loadingCert}
-            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-50"
-          >
-            <Sparkles className="w-4 h-4" />
-            {loadingCert ? 'Carregando...' : t.useFabioCert}
-          </button>
         </div>
       </header>
 
       <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
-        {/* Certificate Upload & Authentication Card */}
+        {/* Universal Certificate Upload Card */}
         <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div className="space-y-4 flex-1">
-              <div className="flex items-center gap-2 text-slate-300 font-semibold text-sm">
-                <KeyRound className="w-4 h-4 text-amber-400" />
-                {t.certAuthTitle}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-slate-200 font-bold text-sm">
+                  <KeyRound className="w-4 h-4 text-amber-400" />
+                  {t.certAuthTitle}
+                </div>
+                <span className="text-[11px] text-slate-400 bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-full">
+                  💡 Suporta qualquer Certificado Digital A1 (.pfx)
+                </span>
               </div>
 
               {!certInfo ? (
@@ -333,7 +295,7 @@ export default function NfsePortalPage() {
                       />
                       <label
                         htmlFor="pfx-file-input"
-                        className="cursor-pointer flex items-center gap-2 text-amber-400 hover:text-amber-300 font-semibold text-xs bg-amber-950/40 border border-amber-800/60 px-3 py-1.5 rounded-lg mr-3"
+                        className="cursor-pointer flex items-center gap-2 text-amber-400 hover:text-amber-300 font-semibold text-xs bg-amber-950/40 border border-amber-800/60 px-3 py-1.5 rounded-lg mr-3 shrink-0"
                       >
                         <UploadCloud className="w-4 h-4" /> {t.selectFile}
                       </label>
@@ -357,8 +319,8 @@ export default function NfsePortalPage() {
                       />
                       <button
                         onClick={handleValidateCert}
-                        disabled={loadingCert}
-                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer"
+                        disabled={loadingCert || !pfxBase64}
+                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer shadow-lg shadow-amber-500/20"
                       >
                         {loadingCert ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                         {t.validateBtn}
@@ -395,7 +357,7 @@ export default function NfsePortalPage() {
                       setPassphrase('');
                       setItems([]);
                     }}
-                    className="text-xs text-slate-400 hover:text-slate-200 border border-slate-800 hover:bg-slate-800 px-3 py-1.5 rounded-lg transition self-start md:self-auto cursor-pointer"
+                    className="text-xs text-slate-400 hover:text-slate-200 border border-slate-800 hover:bg-slate-800 px-3.5 py-1.5 rounded-lg transition self-start md:self-auto cursor-pointer"
                   >
                     {t.switchCert}
                   </button>
@@ -413,7 +375,7 @@ export default function NfsePortalPage() {
         </section>
 
         {/* Dashboard Content */}
-        {certInfo && (
+        {certInfo ? (
           <>
             {/* KPI Cards */}
             <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -426,7 +388,7 @@ export default function NfsePortalPage() {
                   {filteredItems.length} <span className="text-xs font-normal text-slate-400">{t.kpiNotesLabel}</span>
                 </div>
                 <div className="text-xs text-slate-400 mt-1">
-                  {prestadasList.length} {t.filterIssued.toLowerCase()} • {tomadasList.length} {t.filterReceived.toLowerCase()}
+                  {prestadasList.length} prestadas • {tomadasList.length} tomadas
                 </div>
               </div>
 
@@ -673,6 +635,21 @@ export default function NfsePortalPage() {
               </div>
             </section>
           </>
+        ) : (
+          /* Empty Initial State Banner */
+          <section className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-12 text-center space-y-4">
+            <div className="h-16 w-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+              <UploadCloud className="w-8 h-8" />
+            </div>
+            <div className="max-w-md mx-auto space-y-2">
+              <h3 className="text-lg font-bold text-white">
+                Pronto para consultar as Notas Fiscais
+              </h3>
+              <p className="text-xs text-slate-400">
+                Selecione o arquivo do Certificado Digital A1 (.pfx) do cliente acima, informe a senha e clique em <strong>Autenticar & Conectar</strong> para baixar as NFS-e prestadas e tomadas.
+              </p>
+            </div>
+          </section>
         )}
       </main>
 
@@ -743,7 +720,6 @@ export default function NfsePortalPage() {
             <span>© 2026 {t.footerRights}</span>
           </div>
 
-          {/* HelpUS Technology Branding & Link */}
           <a
             href="https://helpusbr.com"
             target="_blank"

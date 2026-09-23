@@ -2,8 +2,8 @@ import './globals.css';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'MFCONT — Contabilidade Empresarial | Portal NFS-e',
-  description: 'Um escritório completo de contabilidade para a sua empresa. Download de Notas Fiscais de Serviço (Prestadas e Tomadas) via Portal Nacional da NFS-e',
+  title: 'HelpUS Accounting — Universal NFS-e Suite',
+  description: 'Plataforma Universal de Gestão e Download de Notas Fiscais de Serviço (Prestadas e Tomadas) para Escritórios de Contabilidade',
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
