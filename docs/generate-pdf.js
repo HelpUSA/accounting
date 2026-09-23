@@ -13,259 +13,220 @@ if (!fs.existsSync(path.dirname(outputPath))) {
 const writeStream = fs.createWriteStream(outputPath);
 doc.pipe(writeStream);
 
-// Colors
+// Theme Colors
 const primaryColor = '#0f172a'; // slate-900
 const accentColor = '#f59e0b'; // amber-500
 const textColor = '#334155'; // slate-700
 const lightBg = '#f8fafc'; // slate-50
+const highlightGreen = '#10b981'; // emerald-500
 
-// Header
-doc.rect(0, 0, 595, 100).fill(primaryColor);
+// ----------------------------------------------------
+// PAGE 1: HEADER & USER RELEASE NOTES
+// ----------------------------------------------------
+
+// Header Bar
+doc.rect(0, 0, 595, 105).fill(primaryColor);
 
 const logoPath = path.join(__dirname, '..', 'public', 'helpus-logo.jpg');
 if (fs.existsSync(logoPath)) {
-  doc.image(logoPath, 40, 15, { width: 70, height: 70 });
+  doc.image(logoPath, 40, 15, { width: 75, height: 75 });
 }
 
 doc
   .fillColor('#ffffff')
-  .fontSize(22)
+  .fontSize(20)
   .font('Helvetica-Bold')
-  .text('HelpUS Technology', 120, 25);
+  .text('HelpUS Accounting Suite', 130, 22);
 
 doc
   .fillColor(accentColor)
   .fontSize(12)
   .font('Helvetica-Bold')
-  .text('Relatório Diário de Solicitações e Implementação', 120, 52);
+  .text('Guia de Atualizações e Novidades para o Usuário', 130, 48);
 
 doc
   .fillColor('#94a3b8')
-  .fontSize(10)
+  .fontSize(9)
   .font('Helvetica')
-  .text('Data: 23/09/2026  |  Projeto: HelpUS Accounting Suite', 120, 70);
+  .text('Versão: 2.1.0  |  Data: 23/09/2026  |  Plataforma: accounting.helpusbr.com', 130, 68);
 
 doc.moveDown(4);
 
-// Section: Visao Geral
+// Introductory Message to the Accountant / User
 doc
   .fillColor(primaryColor)
-  .fontSize(16)
+  .fontSize(14)
   .font('Helvetica-Bold')
-  .text('1. Visão Geral da Plataforma HelpUS Accounting', 40, 120);
+  .text('Prezado(a) Contador(a) e Usuário(a),', 40, 125);
 
 doc
   .fillColor(textColor)
-  .fontSize(10)
+  .fontSize(9.5)
   .font('Helvetica')
   .text(
-    'O HelpUS Accounting é uma solução SaaS Multi-Tenant desenvolvida para escritórios de contabilidade e empresas brasileiras. A ferramenta permite a consulta, gestão e download em lote de Notas Fiscais de Serviço (NFS-e) tanto prestadas quanto tomadas diretamente do Portal Nacional (ADN) e prefeituras integradas, utilizando qualquer Certificado Digital A1 (.pfx).',
+    'Apresentamos o resumo visual das novas funcionalidades e melhorias implementadas na plataforma HelpUS Accounting. O sistema passou por aprimoramentos para tornar a sua navegação mais ágil, intuitiva e totalmente responsiva em qualquer dispositivo (computadores, tablets e smartphones).',
     40,
     145,
     { width: 515, align: 'justify' }
   );
 
-// Highlights box
-doc.rect(40, 200, 515, 65).fill(lightBg).stroke('#e2e8f0');
+// Highlights Box
+doc.rect(40, 195, 515, 60).fill('#fffbeb').stroke('#fef3c7');
 
 doc
-  .fillColor(primaryColor)
+  .fillColor('#92400e')
   .fontSize(10)
   .font('Helvetica-Bold')
-  .text('Destaques da Solução:', 50, 210);
+  .text('📌 O que você encontra nesta nova versão:', 50, 203);
 
 const highlights = [
-  '• Autenticação efêmera mTLS via Certificado Digital A1 (sem retenção de chave privada).',
-  '• Download em lote unificado (Pacote ZIP com XMLs assinalados + DANFSEs HTML + Excel .xlsx).',
-  '• Suporte trilingue completo (Português, Inglês e Espanhol).',
-  '• Domínio Oficial publicado: https://accounting.helpusbr.com',
+  '1. Ordenação Clicável nas Colunas da Tabela (Ordene por Tipo, Data, Nº, Prestador, Tomador, Valor e ISS).',
+  '2. Logotipo Oficial HelpUS Technology no Cabeçalho, Favicon e Rodapé Fixo.',
+  '3. Botão Flutuante do WhatsApp para Atendimento Rápido (83 99872-1848).',
+  '4. Botão do Manual do Usuário e Aviso do Roadmap de Futuros Módulos (NF-e, CT-e, SPED).',
 ];
 
-let hY = 225;
+let hY = 218;
 highlights.forEach(h => {
-  doc.fillColor(textColor).fontSize(9).font('Helvetica').text(h, 50, hY);
-  hY += 12;
+  doc.fillColor('#78350f').fontSize(8.5).font('Helvetica').text(h, 50, hY);
+  hY += 10.5;
 });
 
-// Section 2: Historico de Solicitações
+// Section: Onde encontrar na tela
 doc
   .fillColor(primaryColor)
-  .fontSize(16)
+  .fontSize(13)
   .font('Helvetica-Bold')
-  .text('2. Solicitações do Usuário e Implementações', 40, 280);
+  .text('1. Onde Localizar as Novidades no Site', 40, 270);
 
-const items = [
+const features = [
   {
-    req: 'Captura de NFS-e Prestadas e Tomadas via Portal Nacional',
-    desc: 'Construção da API backend (/api/nfse/consultar) com comunicação mTLS efêmera em Node.js com o ADN/Receita Federal e prefeituras.',
+    title: 'A. Ordenação de Colunas na Tabela de Notas',
+    loc: 'Barra de título da tabela (Linha de cabeçalho das Notas Fiscais)',
+    desc: 'Basta clicar no nome de qualquer coluna (ex: TIPO, DATA EMISSÃO, VALOR SERVIÇO) para alternar a ordenação entre ordem crescente e decrescente. Um ícone de seta (⬆️/⬇️) indicará a coluna atualmente classificada.'
   },
   {
-    req: 'Transformação em SaaS Universal Multi-Tenant',
-    desc: 'Remoção de certificados hardcoded. Qualquer contador pode subir seu .pfx e senha. Configuração de DNS no Cloudflare (accounting.helpusbr.com) e Vercel.',
+    title: 'B. Botão "Manual do Usuário"',
+    loc: 'Topo superior direito (ao lado do seletor de idiomas PT/EN/ES)',
+    desc: 'Ao clicar no botão "Manual do Usuário", uma janela interativa se abre na tela com o passo-a-passo detalhado de como enviar o certificado A1, consultar notas e exportar arquivos.'
   },
   {
-    req: 'Correção de Valores R$ 0,00 em XMLs de Prefeituras',
-    desc: 'Desenvolvimento do analisador parseBrFloat() em src/lib/xml-parser.ts para tratamento de decimais brasileiros (1.500,00) e suporte a múltiplos padrões de tags XML.',
+    title: 'C. Card Explicativo de Módulos e Futuras Funcionalidades',
+    loc: 'Abaixo do cabeçalho principal',
+    desc: 'Apresenta o módulo de NFS-e Nacional & Municipal atualmente ativo e informa o lançamento dos novos módulos integrados em breve (NF-e de Produto, CT-e, SPED Fiscal e Conciliação).'
   },
   {
-    req: 'Identidade Visual HelpUS, Logo Oficial, Favicon e Links',
-    desc: 'Substituição dos ícones padrão pela logo oficial HelpUS (helpus-logo.jpg) no cabeçalho, favicon da aba do navegador e rodapé de desenvolvido por.',
+    title: 'D. Botão de Suporte via WhatsApp Flutuante',
+    loc: 'Canto inferior direito da tela (Ícone verde animado)',
+    desc: 'Permite abrir uma conversa direta no WhatsApp (83 99872-1848) com a equipe de suporte HelpUS com 1 único clique.'
   },
   {
-    req: 'Rodapé Fixo (Sticky / Fixed) e Botão do WhatsApp Animado',
-    desc: 'Rodapé fixo na parte inferior da tela (backdrop-blur) e botão flutuante animado do WhatsApp (83998721848) no canto inferior direito.',
-  },
-  {
-    req: 'Manual do Usuário, Banner de Módulos, Cookies e Privacidade',
-    desc: 'Implementação do Modal de Manual interativo no cabeçalho, card de apresentação dos futuros módulos (NF-e, CT-e, SPED) e aviso de Cookies com LGPD.',
-  },
+    title: 'E. Rodapé Fixo e Aviso de Cookies LGPD',
+    loc: 'Barra inferior fixa de navegação',
+    desc: 'O rodapé acompanha a rolagem da página mantendo os créditos e políticas de privacidade sempre visíveis e acessíveis.'
+  }
 ];
 
-let currentY = 305;
-items.forEach((item, index) => {
+let fY = 290;
+features.forEach(item => {
   doc
     .fillColor(accentColor)
     .fontSize(10)
     .font('Helvetica-Bold')
-    .text(`${index + 1}. ${item.req}`, 40, currentY);
+    .text(item.title, 40, fY);
 
-  currentY += 14;
+  fY += 12;
+  doc
+    .fillColor('#475569')
+    .fontSize(8.5)
+    .font('Helvetica-Bold')
+    .text(`• Onde ver: ${item.loc}`, 50, fY);
+
+  fY += 11;
   doc
     .fillColor(textColor)
-    .fontSize(9)
+    .fontSize(8.5)
     .font('Helvetica')
-    .text(item.desc, 50, currentY, { width: 505 });
+    .text(item.desc, 50, fY, { width: 505 });
 
-  currentY += 24;
+  fY += 20;
 });
 
-// Footer of Page 1
+// Footer Page 1
 doc
   .fillColor('#94a3b8')
   .fontSize(8)
   .font('Helvetica')
-  .text('HelpUS Accounting Suite — Documentação Oficial 2026', 40, 780, { width: 515, align: 'center' });
+  .text('HelpUS Accounting Suite — Guia de Atualizações do Usuário © 2026', 40, 780, { width: 515, align: 'center' });
 
-// Add Page 2 for screenshots and technical specs
+// ----------------------------------------------------
+// PAGE 2: SCREENSHOTS & VISUAL GUIDE
+// ----------------------------------------------------
 doc.addPage();
 
-// Page 2 Header
+// Page 2 Header Bar
 doc.rect(0, 0, 595, 50).fill(primaryColor);
 doc
   .fillColor('#ffffff')
   .fontSize(14)
   .font('Helvetica-Bold')
-  .text('Documentação Técnica e Telas do Sistema', 40, 18);
+  .text('Capturas de Tela e Guia Visual do Sistema', 40, 18);
 
 doc
   .fillColor(primaryColor)
-  .fontSize(14)
+  .fontSize(13)
   .font('Helvetica-Bold')
-  .text('3. Telas e Evidências Visuais', 40, 70);
+  .text('2. Telas Reais do Sistema (https://accounting.helpusbr.com)', 40, 65);
 
-// Embed HelpUS Logo Box
-if (fs.existsSync(logoPath)) {
-  doc.image(logoPath, 40, 95, { width: 140 });
+// Screenshot 1: Desktop Portal
+const shot1 = path.join(__dirname, 'screenshots', '01-visao-geral-portal.png');
+if (fs.existsSync(shot1)) {
+  doc.image(shot1, 40, 85, { width: 515 });
 }
 
 doc
-  .fillColor(textColor)
-  .fontSize(10)
-  .font('Helvetica-Bold')
-  .text('Logotipo Oficial HelpUS Technology', 200, 95);
-
-doc
-  .fillColor(textColor)
-  .fontSize(9)
-  .font('Helvetica')
+  .fillColor('#475569')
+  .fontSize(8)
+  .font('Helvetica-Oblique')
   .text(
-    'O logotipo oficial foi inserido em alta resolução na aplicação web, garantindo a presença de marca no cabeçalho principal, no favicon da aba do navegador e no rodapé fixo do sistema.',
-    200,
-    115,
-    { width: 355 }
+    'Figura 1: Tela Principal Desktop — Exibindo a logo HelpUS no topo, botão de Manual, Banner de Módulos e a barra de cabeçalho da tabela com os botões de ordenação por coluna.',
+    40,
+    455,
+    { width: 515, align: 'center' }
   );
 
-// Spec table
-doc
-  .fillColor(primaryColor)
-  .fontSize(14)
-  .font('Helvetica-Bold')
-  .text('4. Matriz de Arquivos do Projeto', 40, 260);
+// Screenshot 2: Modal Manual
+const shot2 = path.join(__dirname, 'screenshots', '02-modal-manual-usuario.png');
+if (fs.existsSync(shot2)) {
+  doc.image(shot2, 40, 480, { width: 250 });
+}
 
-const fileMatrix = [
-  ['Componente', 'Caminho do Arquivo', 'Descrição'],
-  ['Favicon & Metadata', 'src/app/layout.tsx', 'Apontamento para /helpus-logo.jpg'],
-  ['i18n & Idiomas', 'src/lib/i18n.ts', 'Traduções PT, EN e ES para todos os componentes'],
-  ['Interface Principal', 'src/app/page.tsx', 'Header, Footer fixo, WhatsApp, Modais'],
-  ['Analisador XML', 'src/lib/xml-parser.ts', 'Suporte multi-prefeitura e parseBrFloat'],
-  ['Documentação Obsidian', 'docs/Obsidian/*', '4 notas interligadas por wikilinks'],
-  ['Relatório PDF', 'docs/diario/*', 'PDF com histórico de atividades'],
-];
-
-let tableY = 285;
-fileMatrix.forEach((row, rIdx) => {
-  const isHeader = rIdx === 0;
-  doc
-    .rect(40, tableY, 515, 20)
-    .fill(isHeader ? primaryColor : rIdx % 2 === 0 ? lightBg : '#ffffff')
-    .stroke('#e2e8f0');
-
-  doc
-    .fillColor(isHeader ? '#ffffff' : textColor)
-    .fontSize(8)
-    .font(isHeader ? 'Helvetica-Bold' : 'Helvetica')
-    .text(row[0], 45, tableY + 5, { width: 100 });
-
-  doc
-    .fillColor(isHeader ? '#ffffff' : textColor)
-    .fontSize(8)
-    .font(isHeader ? 'Helvetica-Bold' : 'Helvetica')
-    .text(row[1], 150, tableY + 5, { width: 140 });
-
-  doc
-    .fillColor(isHeader ? '#ffffff' : textColor)
-    .fontSize(8)
-    .font(isHeader ? 'Helvetica-Bold' : 'Helvetica')
-    .text(row[2], 295, tableY + 5, { width: 255 });
-
-  tableY += 20;
-});
-
-// Final signature box
-doc.rect(40, 470, 515, 80).fill('#f1f5f9').stroke('#cbd5e1');
+// Screenshot 3: Mobile View
+const shot3 = path.join(__dirname, 'screenshots', '03-visao-mobile-responsiva.png');
+if (fs.existsSync(shot3)) {
+  doc.image(shot3, 305, 480, { width: 250 });
+}
 
 doc
-  .fillColor(primaryColor)
-  .fontSize(11)
-  .font('Helvetica-Bold')
-  .text('Validação de Produção & Status de Liberação', 55, 482);
+  .fillColor('#475569')
+  .fontSize(8)
+  .font('Helvetica-Oblique')
+  .text(
+    'Figura 2: Modal do Manual do Usuário (esquerda) e Visão Mobile Responsiva em Smartphone (direita).',
+    40,
+    760,
+    { width: 515, align: 'center' }
+  );
 
-doc
-  .fillColor(textColor)
-  .fontSize(9)
-  .font('Helvetica')
-  .text('Status de Compilação: APROVADO (Build 0 errors)', 55, 500);
-
-doc
-  .fillColor(textColor)
-  .fontSize(9)
-  .font('Helvetica')
-  .text('Ambiente Vercel: https://accounting.helpusbr.com', 55, 514);
-
-doc
-  .fillColor(textColor)
-  .fontSize(9)
-  .font('Helvetica')
-  .text('DNS Cloudflare: CNAME accounting.helpusbr.com -> cname.vercel-dns.com (OK)', 55, 528);
-
+// Footer Page 2
 doc
   .fillColor('#94a3b8')
   .fontSize(8)
   .font('Helvetica')
-  .text('HelpUS Technology — Todos os direitos reservados © 2026', 40, 780, { width: 515, align: 'center' });
+  .text('HelpUS Technology — Suporte: (83) 99872-1848  |  accounting.helpusbr.com', 40, 780, { width: 515, align: 'center' });
 
 doc.end();
 
 writeStream.on('finish', () => {
-  console.log('PDF gerado com sucesso em:', outputPath);
+  console.log('PDF para o usuário gerado com sucesso em:', outputPath);
 });
