@@ -20,6 +20,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { NfseItem } from '@/lib/xml-parser';
+import { generateDanfseHtml } from '@/lib/danfse-generator';
 import { Language, translations } from '@/lib/i18n';
 
 interface CertMetadata {
@@ -697,7 +698,7 @@ export default function AccountingPortalPage() {
             <div className="flex-1 overflow-y-auto p-4 bg-slate-950">
               {previewTab === 'danfse' ? (
                 <iframe
-                  srcDoc={require('@/lib/danfse-generator').generateDanfseHtml(previewItem)}
+                  srcDoc={generateDanfseHtml(previewItem)}
                   className="w-full h-[600px] rounded-xl border border-slate-800 bg-white"
                   title="DANFSE Preview"
                 />
