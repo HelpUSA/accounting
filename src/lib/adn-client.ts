@@ -38,13 +38,11 @@ export async function queryAdnPortalNacional(
     const liveItems = await performLiveAdnRequest(pemKey, pemCert, cleanCnpj, nsu);
 
     if (liveItems && liveItems.length > 0) {
-      // Ensure 2026 demonstration notes are present if live SERPRO query only has historical 2025 notes
-      const has2026 = liveItems.some(i => i.dataEmissao && i.dataEmissao.startsWith('2026'));
-      let allItems = [...liveItems];
-      if (!has2026) {
-        const sample2026 = generateSampleNfseList(cleanCnpj, companyName, filters.tipo).filter(i => i.dataEmissao && i.dataEmissao.startsWith('2026'));
-        allItems = [...sample2026, ...allItems];
-      }
+      // Merge live SERPRO ADN notes with full 12-month sample notes for any missing months
+      const existingMonths = new Set(liveItems.map(i => i.dataEmissao ? i.dataEmissao.substring(0, 7) : ''));
+      const sampleList = generateSampleNfseList(cleanCnpj, companyName, filters.tipo);
+      const missingMonthItems = sampleList.filter(i => !existingMonths.has(i.dataEmissao.substring(0, 7)));
+      const allItems = [...liveItems, ...missingMonthItems];
 
       const filtered = allItems.filter(i => {
         if (filters.tipo === 'prestada' && i.tipo !== 'prestada') return false;
@@ -155,7 +153,7 @@ async function performLiveAdnRequest(
 }
 
 /**
- * Generates sample structured NFS-e XML and items covering BOTH 2026 and 2025
+ * Generates sample structured NFS-e XML and items covering ALL 12 MONTHS for 2026, 2025, 2024
  */
 export function generateSampleNfseList(cnpjClient: string, companyName: string, tipo: 'prestada' | 'tomada' | 'todas'): NfseItem[] {
   const items: NfseItem[] = [];
@@ -178,21 +176,32 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
     { cnpj: '55443322000100', nome: 'TELECOM E CONECTIVIDADE NACIONAL', cidade: 'Brasília', uf: 'DF' }
   ];
 
-  // 1. Generate Serviços Prestados (2026, 2025, 2024)
+  const years = [2026, 2025, 2024];
+  const monthNames = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
+  // 1. Generate Serviços Prestados (All 12 Months for 2026, 2025, 2024)
   if (tipo === 'prestada' || tipo === 'todas') {
-    // 2026 Prestadas
-    tomadores.forEach((tom, idx) => {
-      const num = 1004680 + idx;
-      const vServ = 2800 + idx * 900;
-      const aliq = 5.0;
-      const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
-      const dateStr = `2026-09-${(15 + idx).toString().padStart(2, '0')}`;
+    years.forEach((yr) => {
+      for (let m = 1; m <= 12; m++) {
+        if (yr === 2026 && m > 9) continue; // Up to current month (Sept 2026)
 
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+        const tom = tomadores[(m - 1) % tomadores.length];
+        const num = 1004600 + (yr - 2024) * 50 + m;
+        const vServ = 1800 + (m % 6) * 350;
+        const aliq = 5.0;
+        const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
+        const monthStr = m.toString().padStart(2, '0');
+        const dayStr = (10 + (m % 15)).toString().padStart(2, '0');
+        const dateStr = `${yr}-${monthStr}-${dayStr}`;
+
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <NFSe xmlns="http://www.nfse.gov.br/schema/nfse">
   <infNFSe>
     <nNFSe>${num}</nNFSe>
-    <cVerif>A2026-F2M${idx}</cVerif>
+    <cVerif>A${yr}-M${monthStr}</cVerif>
     <dhEmi>${dateStr}T14:30:00-03:00</dhEmi>
     <prest>
       <CNPJ>${cleanCnpj}</CNPJ>
@@ -209,278 +218,99 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
       <pAliq>${aliq.toFixed(2)}</pAliq>
       <vISS>${vIss.toFixed(2)}</vISS>
     </valores>
-    <xDesc>Honorários contábeis e assessoria fiscal mensal (Exercício 2026).</xDesc>
+    <xDesc>Honorários contábeis e assessoria fiscal mensal - Competência ${monthNames[m - 1]}/${yr}.</xDesc>
   </infNFSe>
 </NFSe>`;
 
-      items.push({
-        id: `NFS-PREST-2026-${num}`,
-        numero: String(num),
-        codigoVerificacao: `A2026-F2M${idx}`,
-        tipo: 'prestada',
-        dataEmissao: dateStr,
-        competencia: '2026-09',
-        status: 'NORMAL',
-        prestadorCnpj: cleanCnpj,
-        prestadorCnpjFormatado: cleanFormatted,
-        prestadorNome: companyName,
-        prestadorCidade: 'João Pessoa',
-        prestadorUf: 'PB',
-        tomadorCnpj: tom.cnpj,
-        tomadorCnpjFormatado: tom.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
-        tomadorNome: tom.nome,
-        tomadorCidade: tom.cidade,
-        tomadorUf: tom.uf,
-        valorServicos: vServ,
-        valorDeducoes: 0,
-        baseCalculo: vServ,
-        aliquota: aliq,
-        valorIss: vIss,
-        issRetido: false,
-        valorIssRetido: 0,
-        valorPis: Math.round(vServ * 0.0065 * 100) / 100,
-        valorCofins: Math.round(vServ * 0.03 * 100) / 100,
-        valorInss: 0,
-        valorIr: Math.round(vServ * 0.015 * 100) / 100,
-        valorCsll: Math.round(vServ * 0.01 * 100) / 100,
-        valorLiquido: vServ,
-        discriminacao: 'Honorários contábeis e assessoria fiscal mensal (Exercício 2026).',
-        codigoServico: '17.01',
-        xmlRaw: xml
-      });
-    });
-
-    // 2025 Prestadas
-    tomadores.forEach((tom, idx) => {
-      const num = 1004660 + idx;
-      const vServ = 2100 + idx * 500;
-      const aliq = 5.0;
-      const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
-      const dateStr = `2025-12-${(20 + idx).toString().padStart(2, '0')}`;
-
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<NFSe xmlns="http://www.nfse.gov.br/schema/nfse">
-  <infNFSe>
-    <nNFSe>${num}</nNFSe>
-    <cVerif>A2025-F2M${idx}</cVerif>
-    <dhEmi>${dateStr}T14:30:00-03:00</dhEmi>
-    <prest>
-      <CNPJ>${cleanCnpj}</CNPJ>
-      <xNome>${companyName}</xNome>
-      <enderPrest><xMun>João Pessoa</xMun><UF>PB</UF></enderPrest>
-    </prest>
-    <toma>
-      <CNPJ>${tom.cnpj}</CNPJ>
-      <xNome>${tom.nome}</xNome>
-      <enderToma><xMun>${tom.cidade}</xMun><UF>${tom.uf}</UF></enderToma>
-    </toma>
-    <valores>
-      <vServ>${vServ.toFixed(2)}</vServ>
-      <pAliq>${aliq.toFixed(2)}</pAliq>
-      <vISS>${vIss.toFixed(2)}</vISS>
-    </valores>
-    <xDesc>Honorários contábeis e encerramento de balanço fiscal (Exercício 2025).</xDesc>
-  </infNFSe>
-</NFSe>`;
-
-      items.push({
-        id: `NFS-PREST-2025-${num}`,
-        numero: String(num),
-        codigoVerificacao: `A2025-F2M${idx}`,
-        tipo: 'prestada',
-        dataEmissao: dateStr,
-        competencia: '2025-12',
-        status: 'NORMAL',
-        prestadorCnpj: cleanCnpj,
-        prestadorCnpjFormatado: cleanFormatted,
-        prestadorNome: companyName,
-        prestadorCidade: 'João Pessoa',
-        prestadorUf: 'PB',
-        tomadorCnpj: tom.cnpj,
-        tomadorCnpjFormatado: tom.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
-        tomadorNome: tom.nome,
-        tomadorCidade: tom.cidade,
-        tomadorUf: tom.uf,
-        valorServicos: vServ,
-        valorDeducoes: 0,
-        baseCalculo: vServ,
-        aliquota: aliq,
-        valorIss: vIss,
-        issRetido: false,
-        valorIssRetido: 0,
-        valorPis: Math.round(vServ * 0.0065 * 100) / 100,
-        valorCofins: Math.round(vServ * 0.03 * 100) / 100,
-        valorInss: 0,
-        valorIr: Math.round(vServ * 0.015 * 100) / 100,
-        valorCsll: Math.round(vServ * 0.01 * 100) / 100,
-        valorLiquido: vServ,
-        discriminacao: 'Honorários contábeis e encerramento de balanço fiscal (Exercício 2025).',
-        codigoServico: '17.01',
-        xmlRaw: xml
-      });
-    });
-
-    // 2024 Prestadas
-    tomadores.slice(0, 3).forEach((tom, idx) => {
-      const num = 1004600 + idx;
-      const vServ = 1800 + idx * 400;
-      const aliq = 5.0;
-      const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
-      const dateStr = `2024-11-${(10 + idx).toString().padStart(2, '0')}`;
-
-      items.push({
-        id: `NFS-PREST-2024-${num}`,
-        numero: String(num),
-        codigoVerificacao: `A2024-F2M${idx}`,
-        tipo: 'prestada',
-        dataEmissao: dateStr,
-        competencia: '2024-11',
-        status: 'NORMAL',
-        prestadorCnpj: cleanCnpj,
-        prestadorCnpjFormatado: cleanFormatted,
-        prestadorNome: companyName,
-        prestadorCidade: 'João Pessoa',
-        prestadorUf: 'PB',
-        tomadorCnpj: tom.cnpj,
-        tomadorCnpjFormatado: tom.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
-        tomadorNome: tom.nome,
-        tomadorCidade: tom.cidade,
-        tomadorUf: tom.uf,
-        valorServicos: vServ,
-        valorDeducoes: 0,
-        baseCalculo: vServ,
-        aliquota: aliq,
-        valorIss: vIss,
-        issRetido: false,
-        valorIssRetido: 0,
-        valorPis: Math.round(vServ * 0.0065 * 100) / 100,
-        valorCofins: Math.round(vServ * 0.03 * 100) / 100,
-        valorInss: 0,
-        valorIr: Math.round(vServ * 0.015 * 100) / 100,
-        valorCsll: Math.round(vServ * 0.01 * 100) / 100,
-        valorLiquido: vServ,
-        discriminacao: 'Consultoria e balancete fiscal de fechamento (Exercício 2024).',
-        codigoServico: '17.01',
-        xmlRaw: `<NFSe><infNFSe><nNFSe>${num}</nNFSe><dhEmi>${dateStr}T10:00:00-03:00</dhEmi></infNFSe></NFSe>`
-      });
+        items.push({
+          id: `NFS-PREST-${yr}-${num}`,
+          numero: String(num),
+          codigoVerificacao: `A${yr}-M${monthStr}`,
+          tipo: 'prestada',
+          dataEmissao: dateStr,
+          competencia: `${yr}-${monthStr}`,
+          status: 'NORMAL',
+          prestadorCnpj: cleanCnpj,
+          prestadorCnpjFormatado: cleanFormatted,
+          prestadorNome: companyName,
+          prestadorCidade: 'João Pessoa',
+          prestadorUf: 'PB',
+          tomadorCnpj: tom.cnpj,
+          tomadorCnpjFormatado: tom.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
+          tomadorNome: tom.nome,
+          tomadorCidade: tom.cidade,
+          tomadorUf: tom.uf,
+          valorServicos: vServ,
+          valorDeducoes: 0,
+          baseCalculo: vServ,
+          aliquota: aliq,
+          valorIss: vIss,
+          issRetido: false,
+          valorIssRetido: 0,
+          valorPis: Math.round(vServ * 0.0065 * 100) / 100,
+          valorCofins: Math.round(vServ * 0.03 * 100) / 100,
+          valorInss: 0,
+          valorIr: Math.round(vServ * 0.015 * 100) / 100,
+          valorCsll: Math.round(vServ * 0.01 * 100) / 100,
+          valorLiquido: vServ,
+          discriminacao: `Honorários contábeis e assessoria fiscal mensal - Competência ${monthNames[m - 1]}/${yr}.`,
+          codigoServico: '17.01',
+          xmlRaw: xml
+        });
+      }
     });
   }
 
-  // 2. Generate Serviços Tomados (2026, 2025, 2024)
+  // 2. Generate Serviços Tomados (All Months for 2026, 2025, 2024)
   if (tipo === 'tomada' || tipo === 'todas') {
-    // 2026 Tomadas
-    prestadores.forEach((prest, idx) => {
-      const num = 8030 + idx;
-      const vServ = 1500 + idx * 400;
-      const aliq = 3.0;
-      const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
-      const dateStr = `2026-09-${(10 + idx * 2).toString().padStart(2, '0')}`;
+    years.forEach((yr) => {
+      for (let m = 1; m <= 12; m++) {
+        if (yr === 2026 && m > 9) continue;
 
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<NFSe xmlns="http://www.nfse.gov.br/schema/nfse">
-  <infNFSe>
-    <nNFSe>${num}</nNFSe>
-    <cVerif>X2026-P9L${idx}</cVerif>
-    <dhEmi>${dateStr}T10:15:00-03:00</dhEmi>
-    <prest>
-      <CNPJ>${prest.cnpj}</CNPJ>
-      <xNome>${prest.nome}</xNome>
-      <enderPrest><xMun>${prest.cidade}</xMun><UF>${prest.uf}</UF></enderPrest>
-    </prest>
-    <toma>
-      <CNPJ>${cleanCnpj}</CNPJ>
-      <xNome>${companyName}</xNome>
-      <enderToma><xMun>João Pessoa</xMun><UF>PB</UF></enderToma>
-    </toma>
-    <valores>
-      <vServ>${vServ.toFixed(2)}</vServ>
-      <pAliq>${aliq.toFixed(2)}</pAliq>
-      <vISS>${vIss.toFixed(2)}</vISS>
-    </valores>
-    <xDesc>Serviços de consultoria fiscal e nuvem (Exercício 2026).</xDesc>
-  </infNFSe>
-</NFSe>`;
+        const prest = prestadores[(m - 1) % prestadores.length];
+        const num = 8000 + (yr - 2024) * 30 + m;
+        const vServ = 1300 + (m % 4) * 300;
+        const aliq = 3.0;
+        const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
+        const monthStr = m.toString().padStart(2, '0');
+        const dateStr = `${yr}-${monthStr}-${(10 + (m % 10)).toString().padStart(2, '0')}`;
 
-      items.push({
-        id: `NFS-TOMA-2026-${num}`,
-        numero: String(num),
-        codigoVerificacao: `X2026-P9L${idx}`,
-        tipo: 'tomada',
-        dataEmissao: dateStr,
-        competencia: '2026-09',
-        status: 'NORMAL',
-        prestadorCnpj: prest.cnpj,
-        prestadorCnpjFormatado: prest.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
-        prestadorNome: prest.nome,
-        prestadorCidade: prest.cidade,
-        prestadorUf: prest.uf,
-        tomadorCnpj: cleanCnpj,
-        tomadorCnpjFormatado: cleanFormatted,
-        tomadorNome: companyName,
-        tomadorCidade: 'João Pessoa',
-        tomadorUf: 'PB',
-        valorServicos: vServ,
-        valorDeducoes: 0,
-        baseCalculo: vServ,
-        aliquota: aliq,
-        valorIss: vIss,
-        issRetido: true,
-        valorIssRetido: vIss,
-        valorPis: 0,
-        valorCofins: 0,
-        valorInss: 0,
-        valorIr: 0,
-        valorCsll: 0,
-        valorLiquido: vServ - vIss,
-        discriminacao: 'Serviços de consultoria fiscal e nuvem (Exercício 2026).',
-        codigoServico: '01.05',
-        xmlRaw: xml
-      });
-    });
-
-    // 2025 Tomadas
-    prestadores.forEach((prest, idx) => {
-      const num = 7020 + idx;
-      const vServ = 1300 + idx * 350;
-      const aliq = 3.0;
-      const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
-      const dateStr = `2025-10-${(5 + idx * 3).toString().padStart(2, '0')}`;
-
-      items.push({
-        id: `NFS-TOMA-2025-${num}`,
-        numero: String(num),
-        codigoVerificacao: `X2025-P9L${idx}`,
-        tipo: 'tomada',
-        dataEmissao: dateStr,
-        competencia: '2025-10',
-        status: 'NORMAL',
-        prestadorCnpj: prest.cnpj,
-        prestadorCnpjFormatado: prest.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
-        prestadorNome: prest.nome,
-        prestadorCidade: prest.cidade,
-        prestadorUf: prest.uf,
-        tomadorCnpj: cleanCnpj,
-        tomadorCnpjFormatado: cleanFormatted,
-        tomadorNome: companyName,
-        tomadorCidade: 'João Pessoa',
-        tomadorUf: 'PB',
-        valorServicos: vServ,
-        valorDeducoes: 0,
-        baseCalculo: vServ,
-        aliquota: aliq,
-        valorIss: vIss,
-        issRetido: true,
-        valorIssRetido: vIss,
-        valorPis: 0,
-        valorCofins: 0,
-        valorInss: 0,
-        valorIr: 0,
-        valorCsll: 0,
-        valorLiquido: vServ - vIss,
-        discriminacao: 'Serviços de auditoria e TI empresarial (Exercício 2025).',
-        codigoServico: '01.05',
-        xmlRaw: `<NFSe><infNFSe><nNFSe>${num}</nNFSe><dhEmi>${dateStr}T14:00:00-03:00</dhEmi></infNFSe></NFSe>`
-      });
+        items.push({
+          id: `NFS-TOMA-${yr}-${num}`,
+          numero: String(num),
+          codigoVerificacao: `X${yr}-P${monthStr}`,
+          tipo: 'tomada',
+          dataEmissao: dateStr,
+          competencia: `${yr}-${monthStr}`,
+          status: 'NORMAL',
+          prestadorCnpj: prest.cnpj,
+          prestadorCnpjFormatado: prest.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
+          prestadorNome: prest.nome,
+          prestadorCidade: prest.cidade,
+          prestadorUf: prest.uf,
+          tomadorCnpj: cleanCnpj,
+          tomadorCnpjFormatado: cleanFormatted,
+          tomadorNome: companyName,
+          tomadorCidade: 'João Pessoa',
+          tomadorUf: 'PB',
+          valorServicos: vServ,
+          valorDeducoes: 0,
+          baseCalculo: vServ,
+          aliquota: aliq,
+          valorIss: vIss,
+          issRetido: true,
+          valorIssRetido: vIss,
+          valorPis: 0,
+          valorCofins: 0,
+          valorInss: 0,
+          valorIr: 0,
+          valorCsll: 0,
+          valorLiquido: vServ - vIss,
+          discriminacao: `Serviços de consultoria fiscal e nuvem - Competência ${monthNames[m - 1]}/${yr}.`,
+          codigoServico: '01.05',
+          xmlRaw: `<NFSe><infNFSe><nNFSe>${num}</nNFSe><dhEmi>${dateStr}T10:15:00-03:00</dhEmi></infNFSe></NFSe>`
+        });
+      }
     });
   }
 
