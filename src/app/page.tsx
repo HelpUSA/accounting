@@ -21,11 +21,11 @@ import {
   BookOpen,
   MessageCircle,
   ShieldAlert,
-  CheckCircle2,
-  HelpCircle,
   X,
-  ExternalLink,
-  Layers
+  Layers,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { NfseItem } from '@/lib/xml-parser';
 import { generateDanfseHtml } from '@/lib/danfse-generator';
@@ -40,6 +40,9 @@ interface CertMetadata {
   daysRemaining: number;
   valid: boolean;
 }
+
+type SortField = 'tipo' | 'numero' | 'dataEmissao' | 'prestadorNome' | 'tomadorNome' | 'valorServicos' | 'valorIss';
+type SortOrder = 'asc' | 'desc';
 
 export default function AccountingPortalPage() {
   const [lang, setLang] = useState<Language>('pt');
@@ -59,6 +62,10 @@ export default function AccountingPortalPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loadingQuery, setLoadingQuery] = useState<boolean>(false);
   const [downloadingZip, setDownloadingZip] = useState<boolean>(false);
+
+  // Column Sorting state
+  const [sortField, setSortField] = useState<SortField>('dataEmissao');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // Modal preview state
   const [previewItem, setPreviewItem] = useState<NfseItem | null>(null);
@@ -159,6 +166,16 @@ export default function AccountingPortalPage() {
     }
   }, [filterTipo]);
 
+  // Handle column sort toggle
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
   // Download ZIP / Excel
   const handleDownloadZip = async (format: 'zip' | 'excel' = 'zip') => {
     const selectedItems = items.filter(i => selectedIds.has(i.id));
@@ -217,6 +234,27 @@ export default function AccountingPortalPage() {
     return true;
   });
 
+  // Sorted items view
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    let valA: any = a[sortField];
+    let valB: any = b[sortField];
+
+    if (sortField === 'valorServicos' || sortField === 'valorIss') {
+      valA = safeNum(valA);
+      valB = safeNum(valB);
+    } else if (sortField === 'numero') {
+      valA = parseInt(valA || '0', 10);
+      valB = parseInt(valB || '0', 10);
+    } else {
+      valA = (valA || '').toString().toLowerCase();
+      valB = (valB || '').toString().toLowerCase();
+    }
+
+    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   const prestadasList = filteredItems.filter(i => i.tipo === 'prestada');
   const tomadasList = filteredItems.filter(i => i.tipo === 'tomada');
 
@@ -225,10 +263,10 @@ export default function AccountingPortalPage() {
   const totalIss = filteredItems.reduce((acc, i) => acc + safeNum(i.valorIss), 0);
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredItems.length) {
+    if (selectedIds.size === sortedItems.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredItems.map(i => i.id)));
+      setSelectedIds(new Set(sortedItems.map(i => i.id)));
     }
   };
 
@@ -239,46 +277,57 @@ export default function AccountingPortalPage() {
     setSelectedIds(next);
   };
 
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-3 h-3 text-slate-600 group-hover:text-amber-400 transition" />;
+    }
+    return sortOrder === 'asc' ? (
+      <ArrowUp className="w-3 h-3 text-amber-400 font-bold" />
+    ) : (
+      <ArrowDown className="w-3 h-3 text-amber-400 font-bold" />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
       {/* Top Navigation Bar with Official HelpUS Logo & Header Links */}
-      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {/* Logo Oficial HelpUS */}
+      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30 px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 sm:gap-4 truncate">
           <img
             src="/helpus-logo.jpg"
             alt="HelpUS Logo"
-            className="h-10 w-10 rounded-xl object-cover shadow-lg shadow-amber-500/20 border border-amber-500/30"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl object-cover shadow-lg shadow-amber-500/20 border border-amber-500/30 shrink-0"
           />
-          <div>
-            <h1 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
-              {t.portalTitle}
-              <span className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+          <div className="truncate">
+            <h1 className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-2 truncate">
+              <span className="truncate">{t.portalTitle}</span>
+              <span className="hidden md:flex text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold items-center gap-1 shrink-0">
                 <ShieldCheck className="w-3 h-3" /> {t.badgeNfse}
               </span>
             </h1>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
               {t.portalSub}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Botão Manual do Usuário */}
           <button
             onClick={() => setShowManualModal(true)}
-            className="hidden sm:flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer"
           >
             <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-            {t.userManualBtn}
+            <span className="hidden sm:inline">{t.userManualBtn}</span>
+            <span className="sm:hidden">Manual</span>
           </button>
 
           {/* Language Switcher (PT / EN / ES) */}
           <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 text-xs font-semibold">
-            <Globe className="w-3.5 h-3.5 text-amber-400 mx-1.5" />
+            <Globe className="w-3.5 h-3.5 text-amber-400 mx-1 hidden sm:block" />
             <button
               onClick={() => setLang('pt')}
-              className={`px-2 py-0.5 rounded transition cursor-pointer ${
+              className={`px-1.5 sm:px-2 py-0.5 rounded transition cursor-pointer ${
                 lang === 'pt' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -286,7 +335,7 @@ export default function AccountingPortalPage() {
             </button>
             <button
               onClick={() => setLang('en')}
-              className={`px-2 py-0.5 rounded transition cursor-pointer ${
+              className={`px-1.5 sm:px-2 py-0.5 rounded transition cursor-pointer ${
                 lang === 'en' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -294,7 +343,7 @@ export default function AccountingPortalPage() {
             </button>
             <button
               onClick={() => setLang('es')}
-              className={`px-2 py-0.5 rounded transition cursor-pointer ${
+              className={`px-1.5 sm:px-2 py-0.5 rounded transition cursor-pointer ${
                 lang === 'es' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -305,17 +354,17 @@ export default function AccountingPortalPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-6 space-y-6 pb-28">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 pb-28">
         
         {/* Banner Explicativo de Módulo e Futuras Funcionalidades */}
-        <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+        <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
             <div className="space-y-1.5 max-w-3xl">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="bg-amber-500 text-slate-950 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                   <Layers className="w-3 h-3" /> Módulo Ativo
                 </span>
-                <h2 className="text-base font-bold text-white tracking-wide">
+                <h2 className="text-sm sm:text-base font-bold text-white tracking-wide">
                   {t.moduleBannerTitle}
                 </h2>
               </div>
@@ -330,7 +379,7 @@ export default function AccountingPortalPage() {
 
             <button
               onClick={() => setShowManualModal(true)}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-amber-500/20 shrink-0 cursor-pointer"
+              className="w-full md:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 shrink-0 cursor-pointer"
             >
               <BookOpen className="w-4 h-4" />
               {t.userManualBtn}
@@ -339,14 +388,14 @@ export default function AccountingPortalPage() {
         </section>
 
         {/* Certificate Upload & Auth Card */}
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 mb-5 gap-3">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
                 <KeyRound className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-white">
+                <h2 className="text-sm sm:text-base font-bold text-white">
                   {t.certAuthTitle}
                 </h2>
                 <p className="text-xs text-slate-400">
@@ -356,7 +405,7 @@ export default function AccountingPortalPage() {
             </div>
 
             {certInfo && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 self-end sm:self-auto">
                 <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5" /> {t.connectedBadge}
                 </span>
@@ -371,7 +420,7 @@ export default function AccountingPortalPage() {
           </div>
 
           {!certInfo ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Step 1: File Input */}
               <div className="space-y-2">
                 <label className="block text-xs font-semibold text-slate-300">
@@ -390,7 +439,7 @@ export default function AccountingPortalPage() {
                     className="flex items-center justify-between border border-dashed border-slate-700 hover:border-amber-500 bg-slate-950 p-3.5 rounded-xl cursor-pointer transition group"
                   >
                     <div className="flex items-center gap-3 truncate">
-                      <UploadCloud className="w-5 h-5 text-amber-400 group-hover:scale-110 transition" />
+                      <UploadCloud className="w-5 h-5 text-amber-400 group-hover:scale-110 transition shrink-0" />
                       <span className="text-xs text-slate-300 font-medium truncate">
                         {selectedFileName || t.noFileSelected}
                       </span>
@@ -407,7 +456,7 @@ export default function AccountingPortalPage() {
                 <label className="block text-xs font-semibold text-slate-300">
                   2. {t.passphraseLabel}
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
                     <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                     <input
@@ -421,7 +470,7 @@ export default function AccountingPortalPage() {
                   <button
                     onClick={handleValidateCert}
                     disabled={loadingCert}
-                    className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold px-5 py-3 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer shrink-0"
+                    className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold px-5 py-3 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer shrink-0"
                   >
                     {loadingCert ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -444,7 +493,7 @@ export default function AccountingPortalPage() {
             /* Active Certificate Details Bar */
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20">
+                <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20 shrink-0">
                   <Building2 className="w-6 h-6" />
                 </div>
                 <div>
@@ -457,7 +506,7 @@ export default function AccountingPortalPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-6 text-xs text-slate-400">
+              <div className="flex items-center gap-4 sm:gap-6 text-xs text-slate-400 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-slate-800 pt-3 md:pt-0">
                 <div>
                   <span className="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
                     {t.validUntil}
@@ -475,7 +524,7 @@ export default function AccountingPortalPage() {
                 <button
                   onClick={() => fetchNotes()}
                   disabled={loadingQuery}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shrink-0"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loadingQuery ? 'animate-spin' : ''}`} />
                   Atualizar
@@ -489,7 +538,7 @@ export default function AccountingPortalPage() {
         {certInfo && (
           <>
             {/* KPI Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -500,7 +549,7 @@ export default function AccountingPortalPage() {
                   </div>
                 </div>
                 <div className="mt-3">
-                  <span className="text-2xl font-black text-white">{filteredItems.length}</span>
+                  <span className="text-2xl font-black text-white">{sortedItems.length}</span>
                   <span className="text-xs text-slate-400 ml-1.5">{t.kpiNotesLabel}</span>
                 </div>
               </div>
@@ -562,7 +611,7 @@ export default function AccountingPortalPage() {
               <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 w-full md:w-auto text-xs font-semibold">
                 <button
                   onClick={() => setFilterTipo('todas')}
-                  className={`flex-1 md:flex-initial px-4 py-2 rounded-lg transition cursor-pointer ${
+                  className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
                     filterTipo === 'todas'
                       ? 'bg-amber-500 text-slate-950 font-bold'
                       : 'text-slate-400 hover:text-white'
@@ -572,7 +621,7 @@ export default function AccountingPortalPage() {
                 </button>
                 <button
                   onClick={() => setFilterTipo('prestada')}
-                  className={`flex-1 md:flex-initial px-4 py-2 rounded-lg transition cursor-pointer ${
+                  className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
                     filterTipo === 'prestada'
                       ? 'bg-amber-500 text-slate-950 font-bold'
                       : 'text-slate-400 hover:text-white'
@@ -582,7 +631,7 @@ export default function AccountingPortalPage() {
                 </button>
                 <button
                   onClick={() => setFilterTipo('tomada')}
-                  className={`flex-1 md:flex-initial px-4 py-2 rounded-lg transition cursor-pointer ${
+                  className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
                     filterTipo === 'tomada'
                       ? 'bg-amber-500 text-slate-950 font-bold'
                       : 'text-slate-400 hover:text-white'
@@ -625,28 +674,93 @@ export default function AccountingPortalPage() {
               </div>
             </div>
 
-            {/* Notes Table */}
+            {/* Notes Table with Interactive Column Sorting */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+                <table className="w-full text-left text-xs text-slate-300 min-w-[850px]">
+                  <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 select-none">
                     <tr>
-                      <th className="p-4 w-10 text-center">
+                      <th className="p-3.5 w-10 text-center">
                         <input
                           type="checkbox"
-                          checked={filteredItems.length > 0 && selectedIds.size === filteredItems.length}
+                          checked={sortedItems.length > 0 && selectedIds.size === sortedItems.length}
                           onChange={toggleSelectAll}
                           className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
                         />
                       </th>
-                      <th className="p-4">{t.tableType}</th>
-                      <th className="p-4">{t.tableNum}</th>
-                      <th className="p-4">{t.tableDate}</th>
-                      <th className="p-4">{t.tablePrestador}</th>
-                      <th className="p-4">{t.tableTomador}</th>
-                      <th className="p-4 text-right">{t.tableValServ}</th>
-                      <th className="p-4 text-right">{t.tableIss}</th>
-                      <th className="p-4 text-center">{t.tableActions}</th>
+                      
+                      {/* Interactive Sort Column Headers */}
+                      <th className="p-3.5">
+                        <button
+                          onClick={() => handleSort('tipo')}
+                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
+                        >
+                          <span>{t.tableType}</span>
+                          {renderSortIcon('tipo')}
+                        </button>
+                      </th>
+
+                      <th className="p-3.5">
+                        <button
+                          onClick={() => handleSort('numero')}
+                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
+                        >
+                          <span>{t.tableNum}</span>
+                          {renderSortIcon('numero')}
+                        </button>
+                      </th>
+
+                      <th className="p-3.5">
+                        <button
+                          onClick={() => handleSort('dataEmissao')}
+                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
+                        >
+                          <span>{t.tableDate}</span>
+                          {renderSortIcon('dataEmissao')}
+                        </button>
+                      </th>
+
+                      <th className="p-3.5">
+                        <button
+                          onClick={() => handleSort('prestadorNome')}
+                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
+                        >
+                          <span>{t.tablePrestador}</span>
+                          {renderSortIcon('prestadorNome')}
+                        </button>
+                      </th>
+
+                      <th className="p-3.5">
+                        <button
+                          onClick={() => handleSort('tomadorNome')}
+                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold"
+                        >
+                          <span>{t.tableTomador}</span>
+                          {renderSortIcon('tomadorNome')}
+                        </button>
+                      </th>
+
+                      <th className="p-3.5 text-right">
+                        <button
+                          onClick={() => handleSort('valorServicos')}
+                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold ml-auto"
+                        >
+                          <span>{t.tableValServ}</span>
+                          {renderSortIcon('valorServicos')}
+                        </button>
+                      </th>
+
+                      <th className="p-3.5 text-right">
+                        <button
+                          onClick={() => handleSort('valorIss')}
+                          className="flex items-center gap-1.5 hover:text-white transition group cursor-pointer font-bold ml-auto"
+                        >
+                          <span>{t.tableIss}</span>
+                          {renderSortIcon('valorIss')}
+                        </button>
+                      </th>
+
+                      <th className="p-3.5 text-center">{t.tableActions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
@@ -657,14 +771,14 @@ export default function AccountingPortalPage() {
                           Consultando Portal Nacional (ADN) e Prefeituras...
                         </td>
                       </tr>
-                    ) : filteredItems.length === 0 ? (
+                    ) : sortedItems.length === 0 ? (
                       <tr>
                         <td colSpan={9} className="p-8 text-center text-slate-400">
                           Nenhuma Nota Fiscal de Serviço encontrada para os filtros selecionados.
                         </td>
                       </tr>
                     ) : (
-                      filteredItems.map((item) => {
+                      sortedItems.map((item) => {
                         const isSelected = selectedIds.has(item.id);
                         return (
                           <tr
@@ -673,7 +787,7 @@ export default function AccountingPortalPage() {
                               isSelected ? 'bg-amber-500/5' : ''
                             }`}
                           >
-                            <td className="p-4 text-center">
+                            <td className="p-3.5 text-center">
                               <input
                                 type="checkbox"
                                 checked={isSelected}
@@ -681,7 +795,7 @@ export default function AccountingPortalPage() {
                                 className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
                               />
                             </td>
-                            <td className="p-4">
+                            <td className="p-3.5">
                               <span
                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                                   item.tipo === 'prestada'
@@ -692,9 +806,9 @@ export default function AccountingPortalPage() {
                                 {item.tipo === 'prestada' ? 'PRESTADA' : 'TOMADA'}
                               </span>
                             </td>
-                            <td className="p-4 font-mono font-bold text-white">{item.numero}</td>
-                            <td className="p-4 font-mono text-slate-400">{item.dataEmissao}</td>
-                            <td className="p-4 max-w-xs truncate">
+                            <td className="p-3.5 font-mono font-bold text-white">{item.numero}</td>
+                            <td className="p-3.5 font-mono text-slate-400">{item.dataEmissao}</td>
+                            <td className="p-3.5 max-w-[200px] truncate">
                               <div className="font-semibold text-slate-200 truncate">
                                 {item.prestadorNome}
                               </div>
@@ -702,7 +816,7 @@ export default function AccountingPortalPage() {
                                 CNPJ: {item.prestadorCnpj}
                               </div>
                             </td>
-                            <td className="p-4 max-w-xs truncate">
+                            <td className="p-3.5 max-w-[200px] truncate">
                               <div className="font-semibold text-slate-200 truncate">
                                 {item.tomadorNome}
                               </div>
@@ -710,13 +824,13 @@ export default function AccountingPortalPage() {
                                 CNPJ: {item.tomadorCnpj}
                               </div>
                             </td>
-                            <td className="p-4 text-right font-mono font-bold text-slate-100">
+                            <td className="p-3.5 text-right font-mono font-bold text-slate-100">
                               {formatCurrency(safeNum(item.valorServicos))}
                             </td>
-                            <td className="p-4 text-right font-mono text-indigo-400 font-semibold">
+                            <td className="p-3.5 text-right font-mono text-indigo-400 font-semibold">
                               {formatCurrency(safeNum(item.valorIss))}
                             </td>
-                            <td className="p-4 text-center">
+                            <td className="p-3.5 text-center">
                               <button
                                 onClick={() => {
                                   setPreviewItem(item);
@@ -740,12 +854,12 @@ export default function AccountingPortalPage() {
         )}
 
         {!certInfo && (
-          <section className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-12 text-center space-y-4">
-            <div className="h-16 w-16 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-2xl flex items-center justify-center mx-auto">
-              <UploadCloud className="w-8 h-8" />
+          <section className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 sm:p-12 text-center space-y-4">
+            <div className="h-14 w-14 sm:h-16 sm:w-16 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-2xl flex items-center justify-center mx-auto">
+              <UploadCloud className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
             <div className="max-w-md mx-auto space-y-2">
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-sm sm:text-base font-bold text-white">
                 Pronto para consultar suas NFS-e?
               </h3>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -762,7 +876,7 @@ export default function AccountingPortalPage() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
               <div className="flex items-center gap-3">
-                <span className="font-bold text-white text-base">
+                <span className="font-bold text-white text-sm sm:text-base">
                   NFS-e Nº {previewItem.numero}
                 </span>
                 <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs px-2.5 py-0.5 rounded-full font-semibold">
@@ -821,7 +935,7 @@ export default function AccountingPortalPage() {
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
               <div className="flex items-center gap-2.5">
                 <BookOpen className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-white text-base">
+                <h3 className="font-bold text-white text-sm sm:text-base">
                   {t.manualModalTitle}
                 </h3>
               </div>
@@ -833,10 +947,10 @@ export default function AccountingPortalPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-slate-300 leading-relaxed">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 text-xs text-slate-300 leading-relaxed">
               <div className="space-y-2 border-b border-slate-800 pb-4">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs">1</span>
+                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shrink-0">1</span>
                   Autenticação com Certificado Digital A1
                 </h4>
                 <p>
@@ -846,7 +960,7 @@ export default function AccountingPortalPage() {
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs">2</span>
+                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shrink-0">2</span>
                   Consulta Automática de Notas Prestadas e Tomadas
                 </h4>
                 <p>
@@ -856,17 +970,17 @@ export default function AccountingPortalPage() {
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs">3</span>
-                  Filtros, Pesquisa e Pré-visualização
+                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shrink-0">3</span>
+                  Filtros, Ordenação e Pesquisa
                 </h4>
                 <p>
-                  Utilize as abas <strong>Todas as Notas</strong>, <strong>Serviços Prestados</strong> ou <strong>Serviços Tomados</strong> e a barra de busca por CNPJ ou nome. Clique no botão <strong>Ver DANFSE</strong> para visualizar o documento gráfico impresso ou a estrutura XML fonte assinada.
+                  Utilize as abas <strong>Todas as Notas</strong>, <strong>Serviços Prestados</strong> ou <strong>Serviços Tomados</strong> e a barra de busca. Clique em qualquer cabeçalho de coluna da tabela (Tipo, Nº, Data, Prestador, Tomador, Valor, ISS) para ordenar os registros de forma ascendente ou descendente.
                 </p>
               </div>
 
               <div className="space-y-2">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs">4</span>
+                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shrink-0">4</span>
                   Download em Lote para ZIP e Planilha Excel
                 </h4>
                 <p>
@@ -894,7 +1008,7 @@ export default function AccountingPortalPage() {
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                <h3 className="font-bold text-white text-base">
+                <h3 className="font-bold text-white text-sm sm:text-base">
                   {t.privacyModalTitle}
                 </h3>
               </div>
@@ -906,7 +1020,7 @@ export default function AccountingPortalPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
               <h4 className="font-bold text-white text-sm">1. Compromisso com a Segurança e LGPD</h4>
               <p>
                 A <strong>HelpUS Technology</strong> prioriza a privacidade e a segurança dos dados fiscais dos seus clientes e parceiros. Todas as operações seguem rigorosamente a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
@@ -937,7 +1051,7 @@ export default function AccountingPortalPage() {
 
       {/* Cookie Consent Banner */}
       {!cookieConsent && (
-        <div className="fixed bottom-16 left-6 right-6 sm:right-auto sm:max-w-md z-50 bg-slate-900 border border-slate-700 shadow-2xl p-4 rounded-2xl flex flex-col gap-3">
+        <div className="fixed bottom-16 left-4 right-4 sm:right-auto sm:left-6 sm:max-w-md z-50 bg-slate-900 border border-slate-700 shadow-2xl p-4 rounded-2xl flex flex-col gap-3">
           <div className="flex items-start gap-3">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
               <ShieldAlert className="w-5 h-5" />
@@ -974,18 +1088,18 @@ export default function AccountingPortalPage() {
         target="_blank"
         rel="noopener noreferrer"
         title="Falar no WhatsApp (83) 99872-1848"
-        className="fixed bottom-16 right-6 z-40 bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-3.5 rounded-full shadow-2xl shadow-emerald-500/40 transition-transform transform hover:scale-110 animate-bounce flex items-center justify-center group"
+        className="fixed bottom-16 right-4 sm:right-6 z-40 bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-3 sm:p-3.5 rounded-full shadow-2xl shadow-emerald-500/40 transition-transform transform hover:scale-110 animate-bounce flex items-center justify-center group cursor-pointer"
       >
-        <MessageCircle className="w-7 h-7 text-slate-950 fill-slate-950" />
+        <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 text-slate-950 fill-slate-950" />
         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-black text-slate-950 ml-0 group-hover:ml-2">
           (83) 99872-1848
         </span>
       </a>
 
       {/* Fixed Footer (Rodapé Fixo) with Official HelpUS Branding */}
-      <footer className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-800 bg-slate-900/90 backdrop-blur py-3 px-6 text-center text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-[11px]">
+      <footer className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-800 bg-slate-900/90 backdrop-blur py-2.5 sm:py-3 px-4 sm:px-6 text-center text-xs text-slate-400">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 text-[10px] sm:text-[11px] flex-wrap justify-center">
             <span className="font-semibold text-slate-300">{t.footerPortalName}</span>
             <span>•</span>
             <span>© 2026 {t.footerRights}</span>
@@ -1002,9 +1116,9 @@ export default function AccountingPortalPage() {
             href="https://helpusbr.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-3.5 py-1 rounded-full transition group"
+            className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-3.5 py-1 rounded-full transition group shrink-0"
           >
-            <span className="text-[11px] text-slate-400 group-hover:text-slate-200 transition">
+            <span className="text-[10px] sm:text-[11px] text-slate-400 group-hover:text-slate-200 transition">
               {t.footerDevelopedBy}
             </span>
             <div className="flex items-center gap-1.5 font-bold text-white text-xs">
