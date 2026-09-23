@@ -168,8 +168,9 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
     { cnpj: '55443322000100', nome: 'TELECOM E CONECTIVIDADE NACIONAL', cidade: 'Brasília', uf: 'DF' }
   ];
 
-  // 1. Generate 2026 Serviços Prestados (NEWEST FIRST)
+  // 1. Generate Serviços Prestados (2026, 2025, 2024)
   if (tipo === 'prestada' || tipo === 'todas') {
+    // 2026 Prestadas
     tomadores.forEach((tom, idx) => {
       const num = 1004680 + idx;
       const vServ = 2800 + idx * 900;
@@ -239,7 +240,7 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
       });
     });
 
-    // Generate 2025 Historical Serviços Prestados
+    // 2025 Prestadas
     tomadores.forEach((tom, idx) => {
       const num = 1004660 + idx;
       const vServ = 2100 + idx * 500;
@@ -308,10 +309,56 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
         xmlRaw: xml
       });
     });
+
+    // 2024 Prestadas
+    tomadores.slice(0, 3).forEach((tom, idx) => {
+      const num = 1004600 + idx;
+      const vServ = 1800 + idx * 400;
+      const aliq = 5.0;
+      const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
+      const dateStr = `2024-11-${(10 + idx).toString().padStart(2, '0')}`;
+
+      items.push({
+        id: `NFS-PREST-2024-${num}`,
+        numero: String(num),
+        codigoVerificacao: `A2024-F2M${idx}`,
+        tipo: 'prestada',
+        dataEmissao: dateStr,
+        competencia: '2024-11',
+        status: 'NORMAL',
+        prestadorCnpj: cleanCnpj,
+        prestadorCnpjFormatado: cleanFormatted,
+        prestadorNome: companyName,
+        prestadorCidade: 'João Pessoa',
+        prestadorUf: 'PB',
+        tomadorCnpj: tom.cnpj,
+        tomadorCnpjFormatado: tom.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
+        tomadorNome: tom.nome,
+        tomadorCidade: tom.cidade,
+        tomadorUf: tom.uf,
+        valorServicos: vServ,
+        valorDeducoes: 0,
+        baseCalculo: vServ,
+        aliquota: aliq,
+        valorIss: vIss,
+        issRetido: false,
+        valorIssRetido: 0,
+        valorPis: Math.round(vServ * 0.0065 * 100) / 100,
+        valorCofins: Math.round(vServ * 0.03 * 100) / 100,
+        valorInss: 0,
+        valorIr: Math.round(vServ * 0.015 * 100) / 100,
+        valorCsll: Math.round(vServ * 0.01 * 100) / 100,
+        valorLiquido: vServ,
+        discriminacao: 'Consultoria e balancete fiscal de fechamento (Exercício 2024).',
+        codigoServico: '17.01',
+        xmlRaw: `<NFSe><infNFSe><nNFSe>${num}</nNFSe><dhEmi>${dateStr}T10:00:00-03:00</dhEmi></infNFSe></NFSe>`
+      });
+    });
   }
 
-  // 2. Generate 2026 Serviços Tomados
+  // 2. Generate Serviços Tomados (2026, 2025, 2024)
   if (tipo === 'tomada' || tipo === 'todas') {
+    // 2026 Tomadas
     prestadores.forEach((prest, idx) => {
       const num = 8030 + idx;
       const vServ = 1500 + idx * 400;
@@ -378,6 +425,51 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
         discriminacao: 'Serviços de consultoria fiscal e nuvem (Exercício 2026).',
         codigoServico: '01.05',
         xmlRaw: xml
+      });
+    });
+
+    // 2025 Tomadas
+    prestadores.forEach((prest, idx) => {
+      const num = 7020 + idx;
+      const vServ = 1300 + idx * 350;
+      const aliq = 3.0;
+      const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
+      const dateStr = `2025-10-${(5 + idx * 3).toString().padStart(2, '0')}`;
+
+      items.push({
+        id: `NFS-TOMA-2025-${num}`,
+        numero: String(num),
+        codigoVerificacao: `X2025-P9L${idx}`,
+        tipo: 'tomada',
+        dataEmissao: dateStr,
+        competencia: '2025-10',
+        status: 'NORMAL',
+        prestadorCnpj: prest.cnpj,
+        prestadorCnpjFormatado: prest.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
+        prestadorNome: prest.nome,
+        prestadorCidade: prest.cidade,
+        prestadorUf: prest.uf,
+        tomadorCnpj: cleanCnpj,
+        tomadorCnpjFormatado: cleanFormatted,
+        tomadorNome: companyName,
+        tomadorCidade: 'João Pessoa',
+        tomadorUf: 'PB',
+        valorServicos: vServ,
+        valorDeducoes: 0,
+        baseCalculo: vServ,
+        aliquota: aliq,
+        valorIss: vIss,
+        issRetido: true,
+        valorIssRetido: vIss,
+        valorPis: 0,
+        valorCofins: 0,
+        valorInss: 0,
+        valorIr: 0,
+        valorCsll: 0,
+        valorLiquido: vServ - vIss,
+        discriminacao: 'Serviços de auditoria e TI empresarial (Exercício 2025).',
+        codigoServico: '01.05',
+        xmlRaw: `<NFSe><infNFSe><nNFSe>${num}</nNFSe><dhEmi>${dateStr}T14:00:00-03:00</dhEmi></infNFSe></NFSe>`
       });
     });
   }

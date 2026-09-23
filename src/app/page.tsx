@@ -58,6 +58,20 @@ type ModuleType = 'nfse' | 'nfe' | 'cte' | 'reinf' | 'sped' | 'conciliacao';
 type SortField = 'tipo' | 'numero' | 'dataEmissao' | 'prestadorNome' | 'tomadorNome' | 'valorServicos' | 'valorIss';
 type SortOrder = 'asc' | 'desc';
 
+function normalizeDateToISO(dateStr: string): string {
+  if (!dateStr) return '';
+  const clean = dateStr.trim();
+  if (clean.includes('/')) {
+    const parts = clean.split(' ')[0].split('/');
+    if (parts.length === 3) {
+      const [d, m, y] = parts;
+      const fullYear = y.length === 2 ? `20${y}` : y;
+      return `${fullYear}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+  }
+  return clean.substring(0, 10);
+}
+
 export default function AccountingPortalPage() {
   const [lang, setLang] = useState<Language>('pt');
   const t = translations[lang];
@@ -336,7 +350,7 @@ export default function AccountingPortalPage() {
     if (certInfo) {
       fetchNfseNotes();
     }
-  }, [filterTipo]);
+  }, [filterTipo, startDate, endDate]);
 
   // Quick Date Preset Helpers
   const setPresetYear2026 = () => {
@@ -347,6 +361,11 @@ export default function AccountingPortalPage() {
   const setPresetYear2025 = () => {
     setStartDate('2025-01-01');
     setEndDate('2025-12-31');
+  };
+
+  const setPresetYear2024 = () => {
+    setStartDate('2024-01-01');
+    setEndDate('2024-12-31');
   };
 
   const setPresetThisMonth = () => {
@@ -424,8 +443,11 @@ export default function AccountingPortalPage() {
     if (!item) return false;
     if (filterTipo === 'prestada' && item.tipo !== 'prestada') return false;
     if (filterTipo === 'tomada' && item.tipo !== 'tomada') return false;
-    if (startDate && item.dataEmissao && item.dataEmissao < startDate) return false;
-    if (endDate && item.dataEmissao && item.dataEmissao > endDate) return false;
+    
+    const itemDate = normalizeDateToISO(item.dataEmissao);
+    if (startDate && itemDate && itemDate < startDate) return false;
+    if (endDate && itemDate && itemDate > endDate) return false;
+    
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
@@ -443,7 +465,10 @@ export default function AccountingPortalPage() {
   const sortedNfseItems = [...filteredNfseItems].sort((a, b) => {
     let valA: any = a[sortField];
     let valB: any = b[sortField];
-    if (sortField === 'valorServicos' || sortField === 'valorIss') {
+    if (sortField === 'dataEmissao') {
+      valA = normalizeDateToISO(valA);
+      valB = normalizeDateToISO(valB);
+    } else if (sortField === 'valorServicos' || sortField === 'valorIss') {
       valA = safeNum(valA);
       valB = safeNum(valB);
     } else if (sortField === 'numero') {
@@ -930,6 +955,16 @@ export default function AccountingPortalPage() {
 
                       <div className="flex items-center gap-1.5 pt-1 sm:pt-0 sm:border-l border-slate-800 sm:pl-2 flex-wrap">
                         <button
+                          onClick={clearDates}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg border transition cursor-pointer font-bold ${
+                            !startDate && !endDate
+                              ? 'bg-amber-500 text-slate-950 border-amber-500'
+                              : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                          }`}
+                        >
+                          Todas as Datas
+                        </button>
+                        <button
                           onClick={setPresetYear2026}
                           className={`text-[11px] px-2.5 py-1 rounded-lg border transition cursor-pointer font-bold ${
                             startDate === '2026-01-01' && endDate === '2026-12-31'
@@ -948,6 +983,16 @@ export default function AccountingPortalPage() {
                           }`}
                         >
                           Ano 2025
+                        </button>
+                        <button
+                          onClick={setPresetYear2024}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg border transition cursor-pointer font-bold ${
+                            startDate === '2024-01-01' && endDate === '2024-12-31'
+                              ? 'bg-amber-500 text-slate-950 border-amber-500'
+                              : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                          }`}
+                        >
+                          Ano 2024
                         </button>
                         <button
                           onClick={setPresetThisMonth}
