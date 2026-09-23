@@ -58,6 +58,12 @@ export interface Translations {
   moduleBannerFuture: string;
   manualModalTitle: string;
   privacyModalTitle: string;
+
+  // Date filters
+  startDate: string;
+  endDate: string;
+  filterPeriod: string;
+  clearDateFilter: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -117,7 +123,12 @@ export const translations: Record<Language, Translations> = {
     moduleBannerDesc: 'Esta ferramenta realiza a captura unificada, consulta e download em lote de Notas Fiscais de Serviço (Prestadas e Tomadas) diretamente do Portal Nacional e Prefeituras via Certificado Digital A1.',
     moduleBannerFuture: '🚀 Em Breve: Esta suite contábil receberá novos módulos integrados (NF-e de Produto, CT-e, EFD Reinf, SPED Fiscal e Conciliação Bancária).',
     manualModalTitle: 'Manual Detalhado de Utilização',
-    privacyModalTitle: 'Política de Privacidade e Proteção de Dados (LGPD)'
+    privacyModalTitle: 'Política de Privacidade e Proteção de Dados (LGPD)',
+
+    startDate: 'Data Inicial',
+    endDate: 'Data Final',
+    filterPeriod: 'Filtrar Período',
+    clearDateFilter: 'Limpar Datas'
   },
   en: {
     portalTitle: 'HelpUS Accounting',
@@ -175,7 +186,12 @@ export const translations: Record<Language, Translations> = {
     moduleBannerDesc: 'This tool performs unified capture, query, and batch downloading of Service Invoices (Issued & Received) directly from the National Portal and Municipalities using Digital Certificate A1.',
     moduleBannerFuture: '🚀 Coming Soon: This accounting suite will integrate new modules (Product NF-e, CT-e, EFD Reinf, SPED Fiscal, and Bank Reconciliation).',
     manualModalTitle: 'Detailed User Manual',
-    privacyModalTitle: 'Privacy Policy & Data Protection'
+    privacyModalTitle: 'Privacy Policy & Data Protection',
+
+    startDate: 'Start Date',
+    endDate: 'End Date',
+    filterPeriod: 'Filter Period',
+    clearDateFilter: 'Clear Dates'
   },
   es: {
     portalTitle: 'HelpUS Accounting',
@@ -227,12 +243,17 @@ export const translations: Record<Language, Translations> = {
     userManualBtn: 'Manual de Usuario',
     privacyPolicyLink: 'Política de Privacidad',
     cookieBannerTitle: 'Aviso de Cookies y Privacidad',
-    cookieBannerText: 'Utilizamos únicamente cookies esenciales y almacenamiento local estrictamente necesarios para el funcionamiento seguro de la sesión y preferencia de idioma.',
+    cookieBannerText: 'Utilizamos únicamente cookies esenciales y almacenamiento local strictly necessarias para o funcionamento seguro da sessão e preferência de idioma.',
     cookieAcceptBtn: 'Aceptar y Continuar',
     moduleBannerTitle: 'Módulo NFS-e Nacional y Municipal',
     moduleBannerDesc: 'Esta herramienta realiza captura unificada, consulta y descarga en lote de Facturas de Servicio (Emitidas y Recibidas) directamente del Portal Nacional y Municipios mediante Certificado Digital A1.',
     moduleBannerFuture: '🚀 Próximamente: Esta suite contable incluirá nuevos módulos (NF-e de Producto, CT-e, EFD Reinf, SPED Fiscal y Conciliación Bancaria).',
-    manualModalTitle: 'Manual Detallado de Usuario',
-    privacyModalTitle: 'Política de Privacidad y Protección de Datos'
+    manualModalTitle: 'Manual Detalhado de Usuario',
+    privacyModalTitle: 'Política de Privacidad y Protección de Datos',
+
+    startDate: 'Fecha Inicial',
+    endDate: 'Fecha Final',
+    filterPeriod: 'Filtrar Período',
+    clearDateFilter: 'Limpiar Fechas'
   }
 };

@@ -25,7 +25,9 @@ import {
   Layers,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Calendar,
+  FilterX
 } from 'lucide-react';
 import { NfseItem } from '@/lib/xml-parser';
 import { generateDanfseHtml } from '@/lib/danfse-generator';
@@ -55,9 +57,12 @@ export default function AccountingPortalPage() {
   const [loadingCert, setLoadingCert] = useState<boolean>(false);
   const [certError, setCertError] = useState<string>('');
 
-  // Query state
+  // Query & Filter state
   const [filterTipo, setFilterTipo] = useState<'todas' | 'prestada' | 'tomada'>('todas');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  
   const [items, setItems] = useState<NfseItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loadingQuery, setLoadingQuery] = useState<boolean>(false);
@@ -141,6 +146,8 @@ export default function AccountingPortalPage() {
         pfxBase64,
         passphrase,
         tipo: filterTipo,
+        dataInicio: startDate,
+        dataFim: endDate,
         ...paramsOverride
       };
       const res = await fetch('/api/nfse/consultar', {
@@ -165,6 +172,36 @@ export default function AccountingPortalPage() {
       fetchNotes();
     }
   }, [filterTipo]);
+
+  // Quick Date Preset Helpers
+  const setPresetThisMonth = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const today = now.toISOString().split('T')[0];
+    setStartDate(firstDay);
+    setEndDate(today);
+  };
+
+  const setPresetLastMonth = () => {
+    const now = new Date();
+    const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+    const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+    setStartDate(firstDayLastMonth);
+    setEndDate(lastDayLastMonth);
+  };
+
+  const setPreset90Days = () => {
+    const now = new Date();
+    const d90 = new Date();
+    d90.setDate(now.getDate() - 90);
+    setStartDate(d90.toISOString().split('T')[0]);
+    setEndDate(now.toISOString().split('T')[0]);
+  };
+
+  const clearDates = () => {
+    setStartDate('');
+    setEndDate('');
+  };
 
   // Handle column sort toggle
   const handleSort = (field: SortField) => {
@@ -215,11 +252,20 @@ export default function AccountingPortalPage() {
     }
   };
 
-  // Filtered items view
+  // Filtered items view (including date filters)
   const filteredItems = items.filter(item => {
     if (!item) return false;
     if (filterTipo === 'prestada' && item.tipo !== 'prestada') return false;
     if (filterTipo === 'tomada' && item.tipo !== 'tomada') return false;
+    
+    // Date Filtering
+    if (startDate && item.dataEmissao) {
+      if (item.dataEmissao < startDate) return false;
+    }
+    if (endDate && item.dataEmissao) {
+      if (item.dataEmissao > endDate) return false;
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
@@ -606,71 +652,137 @@ export default function AccountingPortalPage() {
               </div>
             </div>
 
-            {/* Filter and Action Toolbar */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 w-full md:w-auto text-xs font-semibold">
-                <button
-                  onClick={() => setFilterTipo('todas')}
-                  className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
-                    filterTipo === 'todas'
-                      ? 'bg-amber-500 text-slate-950 font-bold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {t.filterAll}
-                </button>
-                <button
-                  onClick={() => setFilterTipo('prestada')}
-                  className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
-                    filterTipo === 'prestada'
-                      ? 'bg-amber-500 text-slate-950 font-bold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {t.filterIssued}
-                </button>
-                <button
-                  onClick={() => setFilterTipo('tomada')}
-                  className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
-                    filterTipo === 'tomada'
-                      ? 'bg-amber-500 text-slate-950 font-bold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {t.filterReceived}
-                </button>
+            {/* Filter Toolbar: Tipo + Date Range Filter + Search + Export */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
+              
+              {/* Row 1: Tipo Filter + Date Range Picker + Presets */}
+              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                
+                {/* Tipo Filter Tabs */}
+                <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs font-semibold shrink-0">
+                  <button
+                    onClick={() => setFilterTipo('todas')}
+                    className={`flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
+                      filterTipo === 'todas'
+                        ? 'bg-amber-500 text-slate-950 font-bold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {t.filterAll}
+                  </button>
+                  <button
+                    onClick={() => setFilterTipo('prestada')}
+                    className={`flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
+                      filterTipo === 'prestada'
+                        ? 'bg-amber-500 text-slate-950 font-bold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {t.filterIssued}
+                  </button>
+                  <button
+                    onClick={() => setFilterTipo('tomada')}
+                    className={`flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg transition cursor-pointer ${
+                      filterTipo === 'tomada'
+                        ? 'bg-amber-500 text-slate-950 font-bold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {t.filterReceived}
+                  </button>
+                </div>
+
+                {/* Date Range Selection Box */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-amber-400 ml-1 shrink-0" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-slate-400 font-semibold">{t.startDate}:</span>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="bg-slate-900 border border-slate-700 text-white text-xs px-2 py-1 rounded-lg outline-none focus:border-amber-500 transition font-mono"
+                      />
+                    </div>
+                    <span className="text-slate-500 font-bold">-</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-slate-400 font-semibold">{t.endDate}:</span>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="bg-slate-900 border border-slate-700 text-white text-xs px-2 py-1 rounded-lg outline-none focus:border-amber-500 transition font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date Quick Presets & Clear */}
+                  <div className="flex items-center gap-1.5 pt-1 sm:pt-0 sm:border-l border-slate-800 sm:pl-2">
+                    <button
+                      onClick={setPresetThisMonth}
+                      className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer"
+                    >
+                      Este Mês
+                    </button>
+                    <button
+                      onClick={setPresetLastMonth}
+                      className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer"
+                    >
+                      Mês Anterior
+                    </button>
+                    <button
+                      onClick={setPreset90Days}
+                      className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer hidden sm:block"
+                    >
+                      90 Dias
+                    </button>
+                    {(startDate || endDate) && (
+                      <button
+                        onClick={clearDates}
+                        title={t.clearDateFilter}
+                        className="text-red-400 hover:text-red-300 p-1 rounded-lg transition cursor-pointer"
+                      >
+                        <FilterX className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Search input */}
-              <div className="relative w-full md:w-72">
-                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t.searchPlaceholder}
-                  className="w-full bg-slate-950 border border-slate-800 text-xs text-white pl-9 pr-4 py-2.5 rounded-xl outline-none focus:border-amber-500 transition"
-                />
-              </div>
+              {/* Row 2: Search + Export Buttons */}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-800/80">
+                {/* Search input */}
+                <div className="relative w-full md:w-80">
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t.searchPlaceholder}
+                    className="w-full bg-slate-950 border border-slate-800 text-xs text-white pl-9 pr-4 py-2.5 rounded-xl outline-none focus:border-amber-500 transition"
+                  />
+                </div>
 
-              {/* Export Buttons */}
-              <div className="flex items-center gap-2 w-full md:w-auto">
-                <button
-                  onClick={() => handleDownloadZip('excel')}
-                  disabled={downloadingZip || selectedIds.size === 0}
-                  className="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  {t.exportExcel}
-                </button>
-                <button
-                  onClick={() => handleDownloadZip('zip')}
-                  disabled={downloadingZip || selectedIds.size === 0}
-                  className="flex-1 md:flex-initial bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer"
-                >
-                  <Download className={`w-4 h-4 ${downloadingZip ? 'animate-bounce' : ''}`} />
-                  {downloadingZip ? t.generatingZip : t.downloadZip}
-                </button>
+                {/* Export Buttons */}
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <button
+                    onClick={() => handleDownloadZip('excel')}
+                    disabled={downloadingZip || selectedIds.size === 0}
+                    className="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    {t.exportExcel}
+                  </button>
+                  <button
+                    onClick={() => handleDownloadZip('zip')}
+                    disabled={downloadingZip || selectedIds.size === 0}
+                    className="flex-1 md:flex-initial bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer"
+                  >
+                    <Download className={`w-4 h-4 ${downloadingZip ? 'animate-bounce' : ''}`} />
+                    {downloadingZip ? t.generatingZip : t.downloadZip}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -971,10 +1083,10 @@ export default function AccountingPortalPage() {
               <div className="space-y-2 border-b border-slate-800 pb-4">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2">
                   <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs shrink-0">3</span>
-                  Filtros, Ordenação e Pesquisa
+                  Filtros por Período de Datas, Ordenação e Pesquisa
                 </h4>
                 <p>
-                  Utilize as abas <strong>Todas as Notas</strong>, <strong>Serviços Prestados</strong> ou <strong>Serviços Tomados</strong> e a barra de busca. Clique em qualquer cabeçalho de coluna da tabela (Tipo, Nº, Data, Prestador, Tomador, Valor, ISS) para ordenar os registros de forma ascendente ou descendente.
+                  Utilize os campos de <strong>Data Inicial</strong> e <strong>Data Final</strong> (ou botões de atalho <strong>Este Mês</strong>, <strong>Mês Anterior</strong>, <strong>90 Dias</strong>) para filtrar o período desejado. Clique nos cabeçalhos de coluna para ordenar a tabela e use a barra de busca por CNPJ ou nome.
                 </p>
               </div>
 
