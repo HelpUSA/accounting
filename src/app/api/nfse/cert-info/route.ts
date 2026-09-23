@@ -12,13 +12,19 @@ export async function POST(req: NextRequest) {
     let pwd = passphrase || '';
 
     if (usePresetFabio) {
-      const fabioPath = `d:\\Documents\\OneDrive\\Pessoas\\Fabio Contador\\MFCONT CONTABILIDADE EMPRESARIAL LTDA_15547423000101- senha mfcont01.pfx`;
-      if (fs.existsSync(fabioPath)) {
-        pfxBuffer = fs.readFileSync(fabioPath);
+      // 1. Try bundled project path first (works on Vercel & Cloud)
+      const bundledPath = path.join(process.cwd(), 'certs', 'mfcont.pfx');
+      const localPath = `d:\\Documents\\OneDrive\\Pessoas\\Fabio Contador\\MFCONT CONTABILIDADE EMPRESARIAL LTDA_15547423000101- senha mfcont01.pfx`;
+
+      if (fs.existsSync(bundledPath)) {
+        pfxBuffer = fs.readFileSync(bundledPath);
+        pwd = 'mfcont01';
+      } else if (fs.existsSync(localPath)) {
+        pfxBuffer = fs.readFileSync(localPath);
         pwd = 'mfcont01';
       } else {
         return NextResponse.json(
-          { success: false, error: 'Arquivo do certificado pré-configurado do Fábio não foi encontrado no caminho especificado.' },
+          { success: false, error: 'Arquivo do certificado do Fábio não foi encontrado no servidor.' },
           { status: 404 }
         );
       }
@@ -33,7 +39,6 @@ export async function POST(req: NextRequest) {
 
     const certInfo = parsePfxCertificate(pfxBuffer, pwd);
     
-    // Do not return raw PEM keys to client for security, return parsed metadata
     return NextResponse.json({
       success: certInfo.valid,
       cert: {

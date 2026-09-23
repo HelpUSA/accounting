@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
+import path from 'path';
 import { parsePfxCertificate } from '@/lib/cert-engine';
 import { queryAdnPortalNacional } from '@/lib/adn-client';
 
@@ -12,9 +13,14 @@ export async function POST(req: NextRequest) {
     let pwd = passphrase || '';
 
     if (usePresetFabio) {
-      const fabioPath = `d:\\Documents\\OneDrive\\Pessoas\\Fabio Contador\\MFCONT CONTABILIDADE EMPRESARIAL LTDA_15547423000101- senha mfcont01.pfx`;
-      if (fs.existsSync(fabioPath)) {
-        pfxBuffer = fs.readFileSync(fabioPath);
+      const bundledPath = path.join(process.cwd(), 'certs', 'mfcont.pfx');
+      const localPath = `d:\\Documents\\OneDrive\\Pessoas\\Fabio Contador\\MFCONT CONTABILIDADE EMPRESARIAL LTDA_15547423000101- senha mfcont01.pfx`;
+
+      if (fs.existsSync(bundledPath)) {
+        pfxBuffer = fs.readFileSync(bundledPath);
+        pwd = 'mfcont01';
+      } else if (fs.existsSync(localPath)) {
+        pfxBuffer = fs.readFileSync(localPath);
         pwd = 'mfcont01';
       }
     } else if (pfxBase64) {
