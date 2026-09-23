@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { NfseItem } from '@/lib/xml-parser';
 import { generateDanfseHtml } from '@/lib/danfse-generator';
+import { formatCurrency, safeNum } from '@/lib/formatters';
 import { Language, translations } from '@/lib/i18n';
 
 interface CertMetadata {
@@ -172,17 +173,18 @@ export default function AccountingPortalPage() {
 
   // Filtered items view
   const filteredItems = items.filter(item => {
+    if (!item) return false;
     if (filterTipo === 'prestada' && item.tipo !== 'prestada') return false;
     if (filterTipo === 'tomada' && item.tipo !== 'tomada') return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
-        item.numero.includes(q) ||
-        item.prestadorNome.toLowerCase().includes(q) ||
-        item.tomadorNome.toLowerCase().includes(q) ||
-        item.prestadorCnpj.includes(q) ||
-        item.tomadorCnpj.includes(q) ||
-        item.discriminacao.toLowerCase().includes(q)
+        (item.numero || '').includes(q) ||
+        (item.prestadorNome || '').toLowerCase().includes(q) ||
+        (item.tomadorNome || '').toLowerCase().includes(q) ||
+        (item.prestadorCnpj || '').includes(q) ||
+        (item.tomadorCnpj || '').includes(q) ||
+        (item.discriminacao || '').toLowerCase().includes(q)
       );
     }
     return true;
@@ -191,9 +193,9 @@ export default function AccountingPortalPage() {
   const prestadasList = filteredItems.filter(i => i.tipo === 'prestada');
   const tomadasList = filteredItems.filter(i => i.tipo === 'tomada');
 
-  const totalValPrestado = prestadasList.reduce((acc, i) => acc + i.valorServicos, 0);
-  const totalValTomado = tomadasList.reduce((acc, i) => acc + i.valorServicos, 0);
-  const totalIss = filteredItems.reduce((acc, i) => acc + i.valorIss, 0);
+  const totalValPrestado = prestadasList.reduce((acc, i) => acc + safeNum(i.valorServicos), 0);
+  const totalValTomado = tomadasList.reduce((acc, i) => acc + safeNum(i.valorServicos), 0);
+  const totalIss = filteredItems.reduce((acc, i) => acc + safeNum(i.valorIss), 0);
 
   const toggleSelectAll = () => {
     if (selectedIds.size === filteredItems.length) {
@@ -399,7 +401,7 @@ export default function AccountingPortalPage() {
                   <ArrowUpRight className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div className="text-2xl font-bold text-emerald-400">
-                  R$ {totalValPrestado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {formatCurrency(totalValPrestado)}
                 </div>
                 <div className="text-xs text-slate-400 mt-1">
                   {prestadasList.length} {t.kpiIssuedSub}
@@ -412,7 +414,7 @@ export default function AccountingPortalPage() {
                   <ArrowDownLeft className="w-4 h-4 text-blue-400" />
                 </div>
                 <div className="text-2xl font-bold text-blue-400">
-                  R$ {totalValTomado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {formatCurrency(totalValTomado)}
                 </div>
                 <div className="text-xs text-slate-400 mt-1">
                   {tomadasList.length} {t.kpiReceivedSub}
@@ -425,7 +427,7 @@ export default function AccountingPortalPage() {
                   <Lock className="w-4 h-4 text-amber-400" />
                 </div>
                 <div className="text-2xl font-bold text-amber-300">
-                  R$ {totalIss.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {formatCurrency(totalIss)}
                 </div>
                 <div className="text-xs text-slate-400 mt-1">
                   {t.kpiIssSub}
@@ -605,11 +607,11 @@ export default function AccountingPortalPage() {
                               </div>
                             </td>
                             <td className="p-4 text-right font-bold text-white">
-                              R$ {item.valorServicos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              R$ {formatCurrency(item.valorServicos)}
                             </td>
                             <td className="p-4 text-right text-slate-300">
-                              R$ {item.valorIss.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              <div className="text-[10px] text-slate-500">({item.aliquota}%)</div>
+                              R$ {formatCurrency(item.valorIss)}
+                              <div className="text-[10px] text-slate-500">({safeNum(item.aliquota)}%)</div>
                             </td>
                             <td className="p-4 text-center">
                               <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-md font-semibold">

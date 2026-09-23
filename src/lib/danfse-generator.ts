@@ -1,12 +1,15 @@
 import { NfseItem } from './xml-parser';
+import { formatCurrency, formatFixed } from './formatters';
 
 export function generateDanfseHtml(item: NfseItem): string {
+  if (!item) return '<html<body>NFS-e inválida</body></html>';
+
   const isPrestada = item.tipo === 'prestada';
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>DANFSE - Nota Fiscal de Serviço Eletrônica Nº ${item.numero}</title>
+  <title>DANFSE - Nota Fiscal de Serviço Eletrônica Nº ${item.numero || ''}</title>
   <style>
     body { font-family: Arial, sans-serif; font-size: 11px; margin: 20px; color: #111; }
     .header-box { border: 2px solid #000; padding: 10px; text-align: center; margin-bottom: 10px; background: #f8f9fa; }
@@ -36,19 +39,19 @@ export function generateDanfseHtml(item: NfseItem): string {
     <div class="grid-row">
       <div class="cell">
         <span class="label">Número da NFS-e</span>
-        <span class="value">${item.numero}</span>
+        <span class="value">${item.numero || ''}</span>
       </div>
       <div class="cell">
         <span class="label">Código de Verificação</span>
-        <span class="value">${item.codigoVerificacao}</span>
+        <span class="value">${item.codigoVerificacao || ''}</span>
       </div>
       <div class="cell">
         <span class="label">Data e Hora de Emissão</span>
-        <span class="value">${item.dataEmissao}</span>
+        <span class="value">${item.dataEmissao || ''}</span>
       </div>
       <div class="cell">
         <span class="label">Competência</span>
-        <span class="value">${item.competencia}</span>
+        <span class="value">${item.competencia || ''}</span>
       </div>
     </div>
   </div>
@@ -59,17 +62,17 @@ export function generateDanfseHtml(item: NfseItem): string {
     <div class="grid-row">
       <div class="cell" style="flex: 2;">
         <span class="label">Razão Social / Nome</span>
-        <span class="value">${item.prestadorNome}</span>
+        <span class="value">${item.prestadorNome || ''}</span>
       </div>
       <div class="cell">
         <span class="label">CNPJ / CPF</span>
-        <span class="value">${item.prestadorCnpjFormatado}</span>
+        <span class="value">${item.prestadorCnpjFormatado || item.prestadorCnpj || ''}</span>
       </div>
     </div>
     <div class="grid-row">
       <div class="cell">
         <span class="label">Município / UF</span>
-        <span class="value">${item.prestadorCidade} / ${item.prestadorUf}</span>
+        <span class="value">${item.prestadorCidade || ''} / ${item.prestadorUf || ''}</span>
       </div>
     </div>
   </div>
@@ -80,17 +83,17 @@ export function generateDanfseHtml(item: NfseItem): string {
     <div class="grid-row">
       <div class="cell" style="flex: 2;">
         <span class="label">Razão Social / Nome</span>
-        <span class="value">${item.tomadorNome}</span>
+        <span class="value">${item.tomadorNome || ''}</span>
       </div>
       <div class="cell">
         <span class="label">CNPJ / CPF</span>
-        <span class="value">${item.tomadorCnpjFormatado}</span>
+        <span class="value">${item.tomadorCnpjFormatado || item.tomadorCnpj || ''}</span>
       </div>
     </div>
     <div class="grid-row">
       <div class="cell">
         <span class="label">Município / UF</span>
-        <span class="value">${item.tomadorCidade} / ${item.tomadorUf}</span>
+        <span class="value">${item.tomadorCidade || ''} / ${item.tomadorUf || ''}</span>
       </div>
     </div>
   </div>
@@ -99,7 +102,7 @@ export function generateDanfseHtml(item: NfseItem): string {
   <div class="grid-box">
     <div class="section-header">Discriminação dos Serviços</div>
     <div class="cell discriminacao">
-      ${item.discriminacao}
+      ${item.discriminacao || ''}
     </div>
   </div>
 
@@ -109,19 +112,19 @@ export function generateDanfseHtml(item: NfseItem): string {
     <div class="grid-row">
       <div class="cell">
         <span class="label">Valor dos Serviços</span>
-        <span class="value">R$ ${item.valorServicos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+        <span class="value">R$ ${formatCurrency(item.valorServicos)}</span>
       </div>
       <div class="cell">
         <span class="label">Base de Cálculo</span>
-        <span class="value">R$ ${item.baseCalculo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+        <span class="value">R$ ${formatCurrency(item.baseCalculo)}</span>
       </div>
       <div class="cell">
         <span class="label">Alíquota</span>
-        <span class="value">${item.aliquota.toFixed(2)}%</span>
+        <span class="value">${formatFixed(item.aliquota, 2)}%</span>
       </div>
       <div class="cell">
         <span class="label">Valor do ISS</span>
-        <span class="value">R$ ${item.valorIss.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+        <span class="value">R$ ${formatCurrency(item.valorIss)}</span>
       </div>
       <div class="cell">
         <span class="label">ISS Retido</span>
@@ -131,29 +134,29 @@ export function generateDanfseHtml(item: NfseItem): string {
     <div class="grid-row">
       <div class="cell">
         <span class="label">PIS (R$)</span>
-        <span class="value">${item.valorPis.toFixed(2)}</span>
+        <span class="value">${formatFixed(item.valorPis, 2)}</span>
       </div>
       <div class="cell">
         <span class="label">COFINS (R$)</span>
-        <span class="value">${item.valorCofins.toFixed(2)}</span>
+        <span class="value">${formatFixed(item.valorCofins, 2)}</span>
       </div>
       <div class="cell">
         <span class="label">INSS (R$)</span>
-        <span class="value">${item.valorInss.toFixed(2)}</span>
+        <span class="value">${formatFixed(item.valorInss, 2)}</span>
       </div>
       <div class="cell">
         <span class="label">IR (R$)</span>
-        <span class="value">${item.valorIr.toFixed(2)}</span>
+        <span class="value">${formatFixed(item.valorIr, 2)}</span>
       </div>
       <div class="cell">
         <span class="label">Valor Líquido da NFS-e</span>
-        <span class="value" style="font-size: 13px; color: #16a34a;">R$ ${item.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+        <span class="value" style="font-size: 13px; color: #16a34a;">R$ ${formatCurrency(item.valorLiquido)}</span>
       </div>
     </div>
   </div>
 
   <div style="text-align: center; margin-top: 15px; color: #666; font-size: 9px;">
-    Documento gerado eletronicamente por <strong>Fabio Contabilidade — Portal NFS-e National Engine</strong>
+    Documento gerado eletronicamente por <strong>HelpUS Accounting — Universal NFS-e Suite</strong>
   </div>
 
 </body>
