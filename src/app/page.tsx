@@ -339,6 +339,16 @@ export default function AccountingPortalPage() {
   }, [filterTipo]);
 
   // Quick Date Preset Helpers
+  const setPresetYear2026 = () => {
+    setStartDate('2026-01-01');
+    setEndDate('2026-12-31');
+  };
+
+  const setPresetYear2025 = () => {
+    setStartDate('2025-01-01');
+    setEndDate('2025-12-31');
+  };
+
   const setPresetThisMonth = () => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
@@ -918,7 +928,27 @@ export default function AccountingPortalPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 pt-1 sm:pt-0 sm:border-l border-slate-800 sm:pl-2">
+                      <div className="flex items-center gap-1.5 pt-1 sm:pt-0 sm:border-l border-slate-800 sm:pl-2 flex-wrap">
+                        <button
+                          onClick={setPresetYear2026}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg border transition cursor-pointer font-bold ${
+                            startDate === '2026-01-01' && endDate === '2026-12-31'
+                              ? 'bg-amber-500 text-slate-950 border-amber-500'
+                              : 'bg-slate-900 hover:bg-slate-800 text-amber-400 border-amber-500/30'
+                          }`}
+                        >
+                          Ano 2026
+                        </button>
+                        <button
+                          onClick={setPresetYear2025}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg border transition cursor-pointer font-bold ${
+                            startDate === '2025-01-01' && endDate === '2025-12-31'
+                              ? 'bg-amber-500 text-slate-950 border-amber-500'
+                              : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                          }`}
+                        >
+                          Ano 2025
+                        </button>
                         <button
                           onClick={setPresetThisMonth}
                           className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer"

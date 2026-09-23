@@ -39,8 +39,10 @@ export async function queryAdnPortalNacional(
 
     if (liveItems && liveItems.length > 0) {
       const filtered = liveItems.filter(i => {
-        if (filters.tipo === 'prestada') return i.tipo === 'prestada';
-        if (filters.tipo === 'tomada') return i.tipo === 'tomada';
+        if (filters.tipo === 'prestada' && i.tipo !== 'prestada') return false;
+        if (filters.tipo === 'tomada' && i.tipo !== 'tomada') return false;
+        if (filters.dataInicio && i.dataEmissao && i.dataEmissao < filters.dataInicio) return false;
+        if (filters.dataFim && i.dataEmissao && i.dataEmissao > filters.dataFim) return false;
         return true;
       });
 
@@ -61,11 +63,19 @@ export async function queryAdnPortalNacional(
 
   // 2. Structured fallback engine for demonstration & offline/sandbox validation
   const items = generateSampleNfseList(cleanCnpj, companyName, filters.tipo);
+  
+  // Filter by date range if provided
+  const filtered = items.filter(i => {
+    if (filters.dataInicio && i.dataEmissao && i.dataEmissao < filters.dataInicio) return false;
+    if (filters.dataFim && i.dataEmissao && i.dataEmissao > filters.dataFim) return false;
+    return true;
+  });
+
   return {
     success: true,
-    totalEncontradas: items.length,
-    items,
-    nsuUltimo: nsu + items.length,
+    totalEncontradas: filtered.length,
+    items: filtered,
+    nsuUltimo: nsu + filtered.length,
     mensagem: `Consulta realizada com sucesso via Portal Nacional da NFS-e (ADN) para o CNPJ ${filters.cnpj}.`,
     sandboxMode: false
   };
@@ -137,7 +147,7 @@ async function performLiveAdnRequest(
 }
 
 /**
- * Generates sample structured NFS-e XML and items for demonstration / validation
+ * Generates sample structured NFS-e XML and items covering BOTH 2026 and 2025
  */
 export function generateSampleNfseList(cnpjClient: string, companyName: string, tipo: 'prestada' | 'tomada' | 'todas'): NfseItem[] {
   const items: NfseItem[] = [];
@@ -158,20 +168,20 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
     { cnpj: '55443322000100', nome: 'TELECOM E CONECTIVIDADE NACIONAL', cidade: 'Brasília', uf: 'DF' }
   ];
 
-  // 1. Generate Serviços Prestados (Issued by this CNPJ)
+  // 1. Generate 2026 Serviços Prestados (NEWEST FIRST)
   if (tipo === 'prestada' || tipo === 'todas') {
     tomadores.forEach((tom, idx) => {
-      const num = 1040 + idx;
-      const vServ = 2500 + idx * 850;
+      const num = 1004680 + idx;
+      const vServ = 2800 + idx * 900;
       const aliq = 5.0;
       const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
-      const dateStr = `2026-09-${(10 + idx).toString().padStart(2, '0')}`;
+      const dateStr = `2026-09-${(15 + idx).toString().padStart(2, '0')}`;
 
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <NFSe xmlns="http://www.nfse.gov.br/schema/nfse">
   <infNFSe>
     <nNFSe>${num}</nNFSe>
-    <cVerif>A7K9-F2M${idx}</cVerif>
+    <cVerif>A2026-F2M${idx}</cVerif>
     <dhEmi>${dateStr}T14:30:00-03:00</dhEmi>
     <prest>
       <CNPJ>${cleanCnpj}</CNPJ>
@@ -188,14 +198,14 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
       <pAliq>${aliq.toFixed(2)}</pAliq>
       <vISS>${vIss.toFixed(2)}</vISS>
     </valores>
-    <xDesc>Honorários contábeis referentes à assessoria fiscal, escrituração digital e planejamento tributário mensal.</xDesc>
+    <xDesc>Honorários contábeis e assessoria fiscal mensal (Exercício 2026).</xDesc>
   </infNFSe>
 </NFSe>`;
 
       items.push({
-        id: `NFS-PREST-${num}`,
+        id: `NFS-PREST-2026-${num}`,
         numero: String(num),
-        codigoVerificacao: `A7K9-F2M${idx}`,
+        codigoVerificacao: `A2026-F2M${idx}`,
         tipo: 'prestada',
         dataEmissao: dateStr,
         competencia: '2026-09',
@@ -223,27 +233,97 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
         valorIr: Math.round(vServ * 0.015 * 100) / 100,
         valorCsll: Math.round(vServ * 0.01 * 100) / 100,
         valorLiquido: vServ,
-        discriminacao: 'Honorários contábeis referentes à assessoria fiscal, escrituração digital e planejamento tributário mensal.',
+        discriminacao: 'Honorários contábeis e assessoria fiscal mensal (Exercício 2026).',
+        codigoServico: '17.01',
+        xmlRaw: xml
+      });
+    });
+
+    // Generate 2025 Historical Serviços Prestados
+    tomadores.forEach((tom, idx) => {
+      const num = 1004660 + idx;
+      const vServ = 2100 + idx * 500;
+      const aliq = 5.0;
+      const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
+      const dateStr = `2025-12-${(20 + idx).toString().padStart(2, '0')}`;
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<NFSe xmlns="http://www.nfse.gov.br/schema/nfse">
+  <infNFSe>
+    <nNFSe>${num}</nNFSe>
+    <cVerif>A2025-F2M${idx}</cVerif>
+    <dhEmi>${dateStr}T14:30:00-03:00</dhEmi>
+    <prest>
+      <CNPJ>${cleanCnpj}</CNPJ>
+      <xNome>${companyName}</xNome>
+      <enderPrest><xMun>João Pessoa</xMun><UF>PB</UF></enderPrest>
+    </prest>
+    <toma>
+      <CNPJ>${tom.cnpj}</CNPJ>
+      <xNome>${tom.nome}</xNome>
+      <enderToma><xMun>${tom.cidade}</xMun><UF>${tom.uf}</UF></enderToma>
+    </toma>
+    <valores>
+      <vServ>${vServ.toFixed(2)}</vServ>
+      <pAliq>${aliq.toFixed(2)}</pAliq>
+      <vISS>${vIss.toFixed(2)}</vISS>
+    </valores>
+    <xDesc>Honorários contábeis e encerramento de balanço fiscal (Exercício 2025).</xDesc>
+  </infNFSe>
+</NFSe>`;
+
+      items.push({
+        id: `NFS-PREST-2025-${num}`,
+        numero: String(num),
+        codigoVerificacao: `A2025-F2M${idx}`,
+        tipo: 'prestada',
+        dataEmissao: dateStr,
+        competencia: '2025-12',
+        status: 'NORMAL',
+        prestadorCnpj: cleanCnpj,
+        prestadorCnpjFormatado: cleanFormatted,
+        prestadorNome: companyName,
+        prestadorCidade: 'João Pessoa',
+        prestadorUf: 'PB',
+        tomadorCnpj: tom.cnpj,
+        tomadorCnpjFormatado: tom.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
+        tomadorNome: tom.nome,
+        tomadorCidade: tom.cidade,
+        tomadorUf: tom.uf,
+        valorServicos: vServ,
+        valorDeducoes: 0,
+        baseCalculo: vServ,
+        aliquota: aliq,
+        valorIss: vIss,
+        issRetido: false,
+        valorIssRetido: 0,
+        valorPis: Math.round(vServ * 0.0065 * 100) / 100,
+        valorCofins: Math.round(vServ * 0.03 * 100) / 100,
+        valorInss: 0,
+        valorIr: Math.round(vServ * 0.015 * 100) / 100,
+        valorCsll: Math.round(vServ * 0.01 * 100) / 100,
+        valorLiquido: vServ,
+        discriminacao: 'Honorários contábeis e encerramento de balanço fiscal (Exercício 2025).',
         codigoServico: '17.01',
         xmlRaw: xml
       });
     });
   }
 
-  // 2. Generate Serviços Tomados (Received by this CNPJ)
+  // 2. Generate 2026 Serviços Tomados
   if (tipo === 'tomada' || tipo === 'todas') {
     prestadores.forEach((prest, idx) => {
-      const num = 8020 + idx;
-      const vServ = 1200 + idx * 450;
+      const num = 8030 + idx;
+      const vServ = 1500 + idx * 400;
       const aliq = 3.0;
       const vIss = Math.round(vServ * (aliq / 100) * 100) / 100;
-      const dateStr = `2026-09-${(5 + idx * 3).toString().padStart(2, '0')}`;
+      const dateStr = `2026-09-${(10 + idx * 2).toString().padStart(2, '0')}`;
 
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <NFSe xmlns="http://www.nfse.gov.br/schema/nfse">
   <infNFSe>
     <nNFSe>${num}</nNFSe>
-    <cVerif>X2B4-P9L${idx}</cVerif>
+    <cVerif>X2026-P9L${idx}</cVerif>
     <dhEmi>${dateStr}T10:15:00-03:00</dhEmi>
     <prest>
       <CNPJ>${prest.cnpj}</CNPJ>
@@ -260,14 +340,14 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
       <pAliq>${aliq.toFixed(2)}</pAliq>
       <vISS>${vIss.toFixed(2)}</vISS>
     </valores>
-    <xDesc>Licenciamento de software de gestão contábil em nuvem e suporte técnico especializado.</xDesc>
+    <xDesc>Serviços de consultoria fiscal e nuvem (Exercício 2026).</xDesc>
   </infNFSe>
 </NFSe>`;
 
       items.push({
-        id: `NFS-TOMA-${num}`,
+        id: `NFS-TOMA-2026-${num}`,
         numero: String(num),
-        codigoVerificacao: `X2B4-P9L${idx}`,
+        codigoVerificacao: `X2026-P9L${idx}`,
         tipo: 'tomada',
         dataEmissao: dateStr,
         competencia: '2026-09',
@@ -295,7 +375,7 @@ export function generateSampleNfseList(cnpjClient: string, companyName: string, 
         valorIr: 0,
         valorCsll: 0,
         valorLiquido: vServ - vIss,
-        discriminacao: 'Licenciamento de software de gestão contábil em nuvem e suporte técnico especializado.',
+        discriminacao: 'Serviços de consultoria fiscal e nuvem (Exercício 2026).',
         codigoServico: '01.05',
         xmlRaw: xml
       });
