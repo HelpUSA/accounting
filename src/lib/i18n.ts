@@ -46,6 +46,18 @@ export interface Translations {
   footerDevelopedBy: string;
   footerRights: string;
   footerPortalName: string;
+
+  // New features
+  userManualBtn: string;
+  privacyPolicyLink: string;
+  cookieBannerTitle: string;
+  cookieBannerText: string;
+  cookieAcceptBtn: string;
+  moduleBannerTitle: string;
+  moduleBannerDesc: string;
+  moduleBannerFuture: string;
+  manualModalTitle: string;
+  privacyModalTitle: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -94,7 +106,18 @@ export const translations: Record<Language, Translations> = {
     modalXmlSource: 'XML Fonte',
     footerDevelopedBy: 'Desenvolvido por',
     footerRights: 'Todos os direitos reservados.',
-    footerPortalName: 'HelpUS Accounting Suite — Multi-Tenant NFS-e Engine'
+    footerPortalName: 'HelpUS Accounting Suite — Multi-Tenant NFS-e Engine',
+
+    userManualBtn: 'Manual do Usuário',
+    privacyPolicyLink: 'Política de Privacidade',
+    cookieBannerTitle: 'Aviso de Cookies & LGPD',
+    cookieBannerText: 'Utilizamos apenas cookies essenciais e armazenamento local estritamente necessários para o funcionamento da sessão segura e retenção do seu idioma preferido.',
+    cookieAcceptBtn: 'Aceitar & Continuar',
+    moduleBannerTitle: 'Módulo NFS-e Nacional & Municipal',
+    moduleBannerDesc: 'Esta ferramenta realiza a captura unificada, consulta e download em lote de Notas Fiscais de Serviço (Prestadas e Tomadas) diretamente do Portal Nacional e Prefeituras via Certificado Digital A1.',
+    moduleBannerFuture: '🚀 Em Breve: Esta suite contábil receberá novos módulos integrados (NF-e de Produto, CT-e, EFD Reinf, SPED Fiscal e Conciliação Bancária).',
+    manualModalTitle: 'Manual Detalhado de Utilização',
+    privacyModalTitle: 'Política de Privacidade e Proteção de Dados (LGPD)'
   },
   en: {
     portalTitle: 'HelpUS Accounting',
@@ -141,7 +164,18 @@ export const translations: Record<Language, Translations> = {
     modalXmlSource: 'XML Source',
     footerDevelopedBy: 'Developed by',
     footerRights: 'All rights reserved.',
-    footerPortalName: 'HelpUS Accounting Suite — Multi-Tenant NFS-e Engine'
+    footerPortalName: 'HelpUS Accounting Suite — Multi-Tenant NFS-e Engine',
+
+    userManualBtn: 'User Manual',
+    privacyPolicyLink: 'Privacy Policy',
+    cookieBannerTitle: 'Cookies & Privacy Notice',
+    cookieBannerText: 'We only use essential cookies and local storage necessary for secure session management and language preference retention.',
+    cookieAcceptBtn: 'Accept & Continue',
+    moduleBannerTitle: 'National & Municipal NFS-e Module',
+    moduleBannerDesc: 'This tool performs unified capture, query, and batch downloading of Service Invoices (Issued & Received) directly from the National Portal and Municipalities using Digital Certificate A1.',
+    moduleBannerFuture: '🚀 Coming Soon: This accounting suite will integrate new modules (Product NF-e, CT-e, EFD Reinf, SPED Fiscal, and Bank Reconciliation).',
+    manualModalTitle: 'Detailed User Manual',
+    privacyModalTitle: 'Privacy Policy & Data Protection'
   },
   es: {
     portalTitle: 'HelpUS Accounting',
@@ -188,6 +222,17 @@ export const translations: Record<Language, Translations> = {
     modalXmlSource: 'XML Fuente',
     footerDevelopedBy: 'Desarrollado por',
     footerRights: 'Todos los derechos reservados.',
-    footerPortalName: 'HelpUS Accounting Suite — Multi-Tenant NFS-e Engine'
+    footerPortalName: 'HelpUS Accounting Suite — Multi-Tenant NFS-e Engine',
+
+    userManualBtn: 'Manual de Usuario',
+    privacyPolicyLink: 'Política de Privacidad',
+    cookieBannerTitle: 'Aviso de Cookies y Privacidad',
+    cookieBannerText: 'Utilizamos únicamente cookies esenciales y almacenamiento local estrictamente necesarios para el funcionamiento seguro de la sesión y preferencia de idioma.',
+    cookieAcceptBtn: 'Aceptar y Continuar',
+    moduleBannerTitle: 'Módulo NFS-e Nacional y Municipal',
+    moduleBannerDesc: 'Esta herramienta realiza captura unificada, consulta y descarga en lote de Facturas de Servicio (Emitidas y Recibidas) directamente del Portal Nacional y Municipios mediante Certificado Digital A1.',
+    moduleBannerFuture: '🚀 Próximamente: Esta suite contable incluirá nuevos módulos (NF-e de Producto, CT-e, EFD Reinf, SPED Fiscal y Conciliación Bancaria).',
+    manualModalTitle: 'Manual Detallado de Usuario',
+    privacyModalTitle: 'Política de Privacidad y Protección de Datos'
   }
 };

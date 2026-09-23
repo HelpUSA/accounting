@@ -17,7 +17,15 @@ import {
   ArrowDownLeft,
   Lock,
   Globe,
-  Sparkles
+  Sparkles,
+  BookOpen,
+  MessageCircle,
+  ShieldAlert,
+  CheckCircle2,
+  HelpCircle,
+  X,
+  ExternalLink,
+  Layers
 } from 'lucide-react';
 import { NfseItem } from '@/lib/xml-parser';
 import { generateDanfseHtml } from '@/lib/danfse-generator';
@@ -55,6 +63,25 @@ export default function AccountingPortalPage() {
   // Modal preview state
   const [previewItem, setPreviewItem] = useState<NfseItem | null>(null);
   const [previewTab, setPreviewTab] = useState<'danfse' | 'xml'>('danfse');
+
+  // Modais de informação
+  const [showManualModal, setShowManualModal] = useState<boolean>(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState<boolean>(false);
+
+  // Cookie banner state
+  const [cookieConsent, setCookieConsent] = useState<boolean>(true);
+
+  useEffect(() => {
+    const consent = localStorage.getItem('helpus_cookie_consent');
+    if (!consent) {
+      setCookieConsent(false);
+    }
+  }, []);
+
+  const handleAcceptCookies = () => {
+    localStorage.setItem('helpus_cookie_consent', 'true');
+    setCookieConsent(true);
+  };
 
   // Handle user upload of PFX file
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,12 +241,15 @@ export default function AccountingPortalPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
-      {/* Top Navigation Bar with HelpUS Accounting Branding */}
-      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex items-center justify-between">
+      {/* Top Navigation Bar with Official HelpUS Logo & Header Links */}
+      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950 font-black text-xl tracking-tighter">
-            H
-          </div>
+          {/* Logo Oficial HelpUS */}
+          <img
+            src="/helpus-logo.jpg"
+            alt="HelpUS Logo"
+            className="h-10 w-10 rounded-xl object-cover shadow-lg shadow-amber-500/20 border border-amber-500/30"
+          />
           <div>
             <h1 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
               {t.portalTitle}
@@ -234,6 +264,15 @@ export default function AccountingPortalPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Botão Manual do Usuário */}
+          <button
+            onClick={() => setShowManualModal(true)}
+            className="hidden sm:flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+            {t.userManualBtn}
+          </button>
+
           {/* Language Switcher (PT / EN / ES) */}
           <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 text-xs font-semibold">
             <Globe className="w-3.5 h-3.5 text-amber-400 mx-1.5" />
@@ -265,264 +304,337 @@ export default function AccountingPortalPage() {
         </div>
       </header>
 
-      <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
-        {/* Universal Certificate Upload Card */}
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-            <div className="space-y-4 flex-1">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-200 font-bold text-sm">
-                  <KeyRound className="w-4 h-4 text-amber-400" />
-                  {t.certAuthTitle}
-                </div>
-                <span className="text-[11px] text-slate-400 bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-full">
-                  💡 Suporta qualquer Certificado Digital A1 (.pfx)
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-6 space-y-6 pb-28">
+        
+        {/* Banner Explicativo de Módulo e Futuras Funcionalidades */}
+        <section className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+            <div className="space-y-1.5 max-w-3xl">
+              <div className="flex items-center gap-2">
+                <span className="bg-amber-500 text-slate-950 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                  <Layers className="w-3 h-3" /> Módulo Ativo
                 </span>
+                <h2 className="text-base font-bold text-white tracking-wide">
+                  {t.moduleBannerTitle}
+                </h2>
               </div>
-
-              {!certInfo ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-2 relative">
-                    <label className="block text-xs font-medium text-slate-400 mb-1">
-                      {t.certFileLabel}
-                    </label>
-                    <div className="flex items-center border border-slate-700 bg-slate-950 rounded-xl px-3 py-2 text-sm text-slate-300">
-                      <input
-                        type="file"
-                        accept=".pfx,.p12"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        id="pfx-file-input"
-                      />
-                      <label
-                        htmlFor="pfx-file-input"
-                        className="cursor-pointer flex items-center gap-2 text-amber-400 hover:text-amber-300 font-semibold text-xs bg-amber-950/40 border border-amber-800/60 px-3 py-1.5 rounded-lg mr-3 shrink-0"
-                      >
-                        <UploadCloud className="w-4 h-4" /> {t.selectFile}
-                      </label>
-                      <span className="truncate text-xs text-slate-400">
-                        {selectedFileName || t.noFileSelected}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">
-                      {t.passphraseLabel}
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="password"
-                        placeholder={t.passphrasePlaceholder}
-                        value={passphrase}
-                        onChange={(e) => setPassphrase(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-                      />
-                      <button
-                        onClick={handleValidateCert}
-                        disabled={loadingCert || !pfxBase64}
-                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer shadow-lg shadow-amber-500/20"
-                      >
-                        {loadingCert ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                        {t.validateBtn}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                      <Building2 className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-white flex items-center gap-2">
-                        {certInfo.companyName}
-                        <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full font-semibold">
-                          {t.connectedBadge}
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-4">
-                        <span>CNPJ: <strong className="text-slate-200">{certInfo.cnpjFormatted}</strong></span>
-                        <span>{t.validUntil} <strong className="text-slate-200">{certInfo.validTo}</strong></span>
-                        <span className="text-emerald-400">({certInfo.daysRemaining} {t.daysRemaining})</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setCertInfo(null);
-                      setSelectedFileName('');
-                      setPfxBase64('');
-                      setPassphrase('');
-                      setItems([]);
-                    }}
-                    className="text-xs text-slate-400 hover:text-slate-200 border border-slate-800 hover:bg-slate-800 px-3.5 py-1.5 rounded-lg transition self-start md:self-auto cursor-pointer"
-                  >
-                    {t.switchCert}
-                  </button>
-                </div>
-              )}
-
-              {certError && (
-                <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 text-xs text-rose-300 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                  {certError}
-                </div>
-              )}
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {t.moduleBannerDesc}
+              </p>
+              <div className="text-[11px] text-amber-400/90 font-medium flex items-center gap-1.5 pt-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>{t.moduleBannerFuture}</span>
+              </div>
             </div>
+
+            <button
+              onClick={() => setShowManualModal(true)}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-amber-500/20 shrink-0 cursor-pointer"
+            >
+              <BookOpen className="w-4 h-4" />
+              {t.userManualBtn}
+            </button>
           </div>
         </section>
 
-        {/* Dashboard Content */}
-        {certInfo ? (
-          <>
-            {/* KPI Cards */}
-            <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
-                  <span>{t.kpiTotalNotes}</span>
-                  <FileCheck2 className="w-4 h-4 text-amber-400" />
-                </div>
-                <div className="text-2xl font-bold text-white">
-                  {filteredItems.length} <span className="text-xs font-normal text-slate-400">{t.kpiNotesLabel}</span>
-                </div>
-                <div className="text-xs text-slate-400 mt-1">
-                  {prestadasList.length} prestadas • {tomadasList.length} tomadas
-                </div>
+        {/* Certificate Upload & Auth Card */}
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                <KeyRound className="w-5 h-5" />
               </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
-                  <span>{t.kpiIssuedVal}</span>
-                  <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div className="text-2xl font-bold text-emerald-400">
-                  R$ {formatCurrency(totalValPrestado)}
-                </div>
-                <div className="text-xs text-slate-400 mt-1">
-                  {prestadasList.length} {t.kpiIssuedSub}
-                </div>
+              <div>
+                <h2 className="text-base font-bold text-white">
+                  {t.certAuthTitle}
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Insira qualquer certificado digital A1 para consultar e baixar Notas Fiscais de Serviço.
+                </p>
               </div>
+            </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
-                  <span>{t.kpiReceivedVal}</span>
-                  <ArrowDownLeft className="w-4 h-4 text-blue-400" />
-                </div>
-                <div className="text-2xl font-bold text-blue-400">
-                  R$ {formatCurrency(totalValTomado)}
-                </div>
-                <div className="text-xs text-slate-400 mt-1">
-                  {tomadasList.length} {t.kpiReceivedSub}
-                </div>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
-                  <span>{t.kpiTotalIss}</span>
-                  <Lock className="w-4 h-4 text-amber-400" />
-                </div>
-                <div className="text-2xl font-bold text-amber-300">
-                  R$ {formatCurrency(totalIss)}
-                </div>
-                <div className="text-xs text-slate-400 mt-1">
-                  {t.kpiIssSub}
-                </div>
-              </div>
-            </section>
-
-            {/* Filter & Action Controls */}
-            <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center bg-slate-950 border border-slate-800 p-1 rounded-xl w-full md:w-auto">
+            {certInfo && (
+              <div className="flex items-center gap-3">
+                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" /> {t.connectedBadge}
+                </span>
                 <button
-                  onClick={() => setFilterTipo('todas')}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    filterTipo === 'todas'
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
+                  onClick={() => setCertInfo(null)}
+                  className="text-xs text-slate-400 hover:text-slate-200 underline cursor-pointer"
                 >
-                  {t.filterAll} ({items.length})
-                </button>
-                <button
-                  onClick={() => setFilterTipo('prestada')}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    filterTipo === 'prestada'
-                      ? 'bg-emerald-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {t.filterIssued} ({items.filter(i => i.tipo === 'prestada').length})
-                </button>
-                <button
-                  onClick={() => setFilterTipo('tomada')}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    filterTipo === 'tomada'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {t.filterReceived} ({items.filter(i => i.tipo === 'tomada').length})
+                  {t.switchCert}
                 </button>
               </div>
+            )}
+          </div>
 
-              {/* Search Input */}
-              <div className="relative flex-1 max-w-md w-full">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  placeholder={t.searchPlaceholder}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                />
+          {!certInfo ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Step 1: File Input */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-300">
+                  1. {t.certFileLabel}
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".pfx,.p12"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="cert-file-input"
+                  />
+                  <label
+                    htmlFor="cert-file-input"
+                    className="flex items-center justify-between border border-dashed border-slate-700 hover:border-amber-500 bg-slate-950 p-3.5 rounded-xl cursor-pointer transition group"
+                  >
+                    <div className="flex items-center gap-3 truncate">
+                      <UploadCloud className="w-5 h-5 text-amber-400 group-hover:scale-110 transition" />
+                      <span className="text-xs text-slate-300 font-medium truncate">
+                        {selectedFileName || t.noFileSelected}
+                      </span>
+                    </div>
+                    <span className="bg-slate-800 group-hover:bg-amber-500 group-hover:text-slate-950 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition shrink-0">
+                      {t.selectFile}
+                    </span>
+                  </label>
+                </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 w-full md:w-auto">
+              {/* Step 2: Passphrase & Submit */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-300">
+                  2. {t.passphraseLabel}
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                    <input
+                      type="password"
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      placeholder={t.passphrasePlaceholder}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 text-xs text-white pl-10 pr-4 py-3 rounded-xl outline-none transition"
+                    />
+                  </div>
+                  <button
+                    onClick={handleValidateCert}
+                    disabled={loadingCert}
+                    className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold px-5 py-3 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer shrink-0"
+                  >
+                    {loadingCert ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="w-4 h-4" />
+                    )}
+                    {t.validateBtn}
+                  </button>
+                </div>
+              </div>
+
+              {certError && (
+                <div className="md:col-span-2 bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{certError}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Active Certificate Details Bar */
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    {certInfo.companyName}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono mt-0.5">
+                    CNPJ: {certInfo.cnpjFormatted}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6 text-xs text-slate-400">
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                    {t.validUntil}
+                  </span>
+                  <span className="font-semibold text-slate-200">{certInfo.validTo}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                    Status
+                  </span>
+                  <span className="font-bold text-emerald-400">
+                    {certInfo.daysRemaining} {t.daysRemaining}
+                  </span>
+                </div>
                 <button
                   onClick={() => fetchNotes()}
                   disabled={loadingQuery}
-                  className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition cursor-pointer"
-                  title="Atualizar busca"
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
                 >
-                  <RefreshCw className={`w-4 h-4 ${loadingQuery ? 'animate-spin' : ''}`} />
-                </button>
-
-                <button
-                  onClick={() => handleDownloadZip('excel')}
-                  disabled={downloadingZip}
-                  className="flex items-center gap-2 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-800/80 text-emerald-300 text-xs font-semibold px-3.5 py-2.5 rounded-xl transition cursor-pointer"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                  {t.exportExcel}
-                </button>
-
-                <button
-                  onClick={() => handleDownloadZip('zip')}
-                  disabled={downloadingZip}
-                  className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-50"
-                >
-                  <Download className="w-4 h-4" />
-                  {downloadingZip ? t.generatingZip : `${t.downloadZip} (${selectedIds.size})`}
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingQuery ? 'animate-spin' : ''}`} />
+                  Atualizar
                 </button>
               </div>
-            </section>
+            </div>
+          )}
+        </section>
 
-            {/* NFS-e Table */}
-            <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        {/* Dashboards & Notes Table */}
+        {certInfo && (
+          <>
+            {/* KPI Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    {t.kpiTotalNotes}
+                  </span>
+                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+                    <FileCheck2 className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <span className="text-2xl font-black text-white">{filteredItems.length}</span>
+                  <span className="text-xs text-slate-400 ml-1.5">{t.kpiNotesLabel}</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                    {t.kpiIssuedVal}
+                  </span>
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                    <ArrowUpRight className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <span className="text-xl font-black text-emerald-400">
+                    {formatCurrency(totalValPrestado)}
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssuedSub}</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                    {t.kpiReceivedVal}
+                  </span>
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                    <ArrowDownLeft className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <span className="text-xl font-black text-amber-400">
+                    {formatCurrency(totalValTomado)}
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiReceivedSub}</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
+                    {t.kpiTotalIss}
+                  </span>
+                  <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <span className="text-xl font-black text-indigo-400">
+                    {formatCurrency(totalIss)}
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssSub}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter and Action Toolbar */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 w-full md:w-auto text-xs font-semibold">
+                <button
+                  onClick={() => setFilterTipo('todas')}
+                  className={`flex-1 md:flex-initial px-4 py-2 rounded-lg transition cursor-pointer ${
+                    filterTipo === 'todas'
+                      ? 'bg-amber-500 text-slate-950 font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {t.filterAll}
+                </button>
+                <button
+                  onClick={() => setFilterTipo('prestada')}
+                  className={`flex-1 md:flex-initial px-4 py-2 rounded-lg transition cursor-pointer ${
+                    filterTipo === 'prestada'
+                      ? 'bg-amber-500 text-slate-950 font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {t.filterIssued}
+                </button>
+                <button
+                  onClick={() => setFilterTipo('tomada')}
+                  className={`flex-1 md:flex-initial px-4 py-2 rounded-lg transition cursor-pointer ${
+                    filterTipo === 'tomada'
+                      ? 'bg-amber-500 text-slate-950 font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {t.filterReceived}
+                </button>
+              </div>
+
+              {/* Search input */}
+              <div className="relative w-full md:w-72">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t.searchPlaceholder}
+                  className="w-full bg-slate-950 border border-slate-800 text-xs text-white pl-9 pr-4 py-2.5 rounded-xl outline-none focus:border-amber-500 transition"
+                />
+              </div>
+
+              {/* Export Buttons */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <button
+                  onClick={() => handleDownloadZip('excel')}
+                  disabled={downloadingZip || selectedIds.size === 0}
+                  className="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  {t.exportExcel}
+                </button>
+                <button
+                  onClick={() => handleDownloadZip('zip')}
+                  disabled={downloadingZip || selectedIds.size === 0}
+                  className="flex-1 md:flex-initial bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer"
+                >
+                  <Download className={`w-4 h-4 ${downloadingZip ? 'animate-bounce' : ''}`} />
+                  {downloadingZip ? t.generatingZip : t.downloadZip}
+                </button>
+              </div>
+            </div>
+
+            {/* Notes Table */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
+                  <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
                     <tr>
-                      <th className="p-4 w-10">
+                      <th className="p-4 w-10 text-center">
                         <input
                           type="checkbox"
-                          checked={selectedIds.size === filteredItems.length && filteredItems.length > 0}
+                          checked={filteredItems.length > 0 && selectedIds.size === filteredItems.length}
                           onChange={toggleSelectAll}
                           className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
                         />
@@ -534,29 +646,34 @@ export default function AccountingPortalPage() {
                       <th className="p-4">{t.tableTomador}</th>
                       <th className="p-4 text-right">{t.tableValServ}</th>
                       <th className="p-4 text-right">{t.tableIss}</th>
-                      <th className="p-4 text-center">{t.tableStatus}</th>
                       <th className="p-4 text-center">{t.tableActions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
-                    {filteredItems.length === 0 ? (
+                    {loadingQuery ? (
                       <tr>
-                        <td colSpan={10} className="p-12 text-center text-slate-500">
-                          {t.emptyState}
+                        <td colSpan={9} className="p-8 text-center text-slate-400">
+                          <RefreshCw className="w-6 h-6 animate-spin mx-auto text-amber-400 mb-2" />
+                          Consultando Portal Nacional (ADN) e Prefeituras...
+                        </td>
+                      </tr>
+                    ) : filteredItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="p-8 text-center text-slate-400">
+                          Nenhuma Nota Fiscal de Serviço encontrada para os filtros selecionados.
                         </td>
                       </tr>
                     ) : (
                       filteredItems.map((item) => {
-                        const isPrest = item.tipo === 'prestada';
                         const isSelected = selectedIds.has(item.id);
                         return (
                           <tr
                             key={item.id}
                             className={`hover:bg-slate-800/50 transition ${
-                              isSelected ? 'bg-amber-950/20' : ''
+                              isSelected ? 'bg-amber-500/5' : ''
                             }`}
                           >
-                            <td className="p-4">
+                            <td className="p-4 text-center">
                               <input
                                 type="checkbox"
                                 checked={isSelected}
@@ -566,57 +683,38 @@ export default function AccountingPortalPage() {
                             </td>
                             <td className="p-4">
                               <span
-                                className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                                  isPrest
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  item.tipo === 'prestada'
                                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                    : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
                                 }`}
                               >
-                                {isPrest ? (
-                                  <>
-                                    <ArrowUpRight className="w-3 h-3" /> PRESTADA
-                                  </>
-                                ) : (
-                                  <>
-                                    <ArrowDownLeft className="w-3 h-3" /> TOMADA
-                                  </>
-                                )}
+                                {item.tipo === 'prestada' ? 'PRESTADA' : 'TOMADA'}
                               </span>
                             </td>
-                            <td className="p-4 font-mono font-bold text-white">
-                              {item.numero}
-                              <div className="text-[10px] text-slate-500 font-normal">
-                                Cod: {item.codigoVerificacao}
-                              </div>
-                            </td>
-                            <td className="p-4 text-slate-300">{item.dataEmissao}</td>
-                            <td className="p-4">
-                              <div className="font-semibold text-slate-200 truncate max-w-[200px]">
+                            <td className="p-4 font-mono font-bold text-white">{item.numero}</td>
+                            <td className="p-4 font-mono text-slate-400">{item.dataEmissao}</td>
+                            <td className="p-4 max-w-xs truncate">
+                              <div className="font-semibold text-slate-200 truncate">
                                 {item.prestadorNome}
                               </div>
-                              <div className="text-[10px] text-slate-400 font-mono">
-                                CNPJ: {item.prestadorCnpjFormatado}
+                              <div className="text-[10px] font-mono text-slate-500">
+                                CNPJ: {item.prestadorCnpj}
                               </div>
                             </td>
-                            <td className="p-4">
-                              <div className="font-semibold text-slate-200 truncate max-w-[200px]">
+                            <td className="p-4 max-w-xs truncate">
+                              <div className="font-semibold text-slate-200 truncate">
                                 {item.tomadorNome}
                               </div>
-                              <div className="text-[10px] text-slate-400 font-mono">
-                                CNPJ: {item.tomadorCnpjFormatado}
+                              <div className="text-[10px] font-mono text-slate-500">
+                                CNPJ: {item.tomadorCnpj}
                               </div>
                             </td>
-                            <td className="p-4 text-right font-bold text-white">
-                              R$ {formatCurrency(item.valorServicos)}
+                            <td className="p-4 text-right font-mono font-bold text-slate-100">
+                              {formatCurrency(safeNum(item.valorServicos))}
                             </td>
-                            <td className="p-4 text-right text-slate-300">
-                              R$ {formatCurrency(item.valorIss)}
-                              <div className="text-[10px] text-slate-500">({safeNum(item.aliquota)}%)</div>
-                            </td>
-                            <td className="p-4 text-center">
-                              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-md font-semibold">
-                                {item.status}
-                              </span>
+                            <td className="p-4 text-right font-mono text-indigo-400 font-semibold">
+                              {formatCurrency(safeNum(item.valorIss))}
                             </td>
                             <td className="p-4 text-center">
                               <button
@@ -624,9 +722,10 @@ export default function AccountingPortalPage() {
                                   setPreviewItem(item);
                                   setPreviewTab('danfse');
                                 }}
-                                className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition font-medium cursor-pointer"
+                                className="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 mx-auto cursor-pointer"
                               >
-                                <Eye className="w-3.5 h-3.5" /> {t.btnViewDanfse}
+                                <Eye className="w-3.5 h-3.5" />
+                                {t.btnViewDanfse}
                               </button>
                             </td>
                           </tr>
@@ -636,20 +735,21 @@ export default function AccountingPortalPage() {
                   </tbody>
                 </table>
               </div>
-            </section>
+            </div>
           </>
-        ) : (
-          /* Empty Initial State Banner */
-          <section className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-12 text-center space-y-4">
-            <div className="h-16 w-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+        )}
+
+        {!certInfo && (
+          <section className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-12 text-center space-y-4">
+            <div className="h-16 w-16 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-2xl flex items-center justify-center mx-auto">
               <UploadCloud className="w-8 h-8" />
             </div>
             <div className="max-w-md mx-auto space-y-2">
-              <h3 className="text-lg font-bold text-white">
-                Pronto para consultar as Notas Fiscais
+              <h3 className="text-base font-bold text-white">
+                Pronto para consultar suas NFS-e?
               </h3>
-              <p className="text-xs text-slate-400">
-                Selecione o arquivo do Certificado Digital A1 (.pfx) do cliente acima, informe a senha e clique em <strong>Autenticar & Conectar</strong> para baixar as NFS-e prestadas e tomadas.
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {t.emptyState}
               </p>
             </div>
           </section>
@@ -714,28 +814,205 @@ export default function AccountingPortalPage() {
         </div>
       )}
 
-      {/* Footer with HelpUS Technology Branding */}
-      <footer className="border-t border-slate-800 bg-slate-900/60 py-6 px-6 mt-12 text-center text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+      {/* Modal: Manual do Usuário */}
+      {showManualModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+              <div className="flex items-center gap-2.5">
+                <BookOpen className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-white text-base">
+                  {t.manualModalTitle}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowManualModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-slate-300 leading-relaxed">
+              <div className="space-y-2 border-b border-slate-800 pb-4">
+                <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs">1</span>
+                  Autenticação com Certificado Digital A1
+                </h4>
+                <p>
+                  No card superior, clique em <strong>Selecionar arquivo .pfx</strong> e escolha o certificado digital A1 da sua empresa ou cliente (.pfx ou .p12). Digite a senha da chave privada correspondente e clique no botão <strong>Autenticar & Conectar</strong>.
+                </p>
+              </div>
+
+              <div className="space-y-2 border-b border-slate-800 pb-4">
+                <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs">2</span>
+                  Consulta Automática de Notas Prestadas e Tomadas
+                </h4>
+                <p>
+                  Após a validação, a plataforma conecta-se de forma segura (mTLS) ao Portal Nacional da NFS-e (ADN) e às prefeituras integradas, exibindo o montante bruto de serviços prestados, tomados e os impostos de ISS apurados.
+                </p>
+              </div>
+
+              <div className="space-y-2 border-b border-slate-800 pb-4">
+                <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs">3</span>
+                  Filtros, Pesquisa e Pré-visualização
+                </h4>
+                <p>
+                  Utilize as abas <strong>Todas as Notas</strong>, <strong>Serviços Prestados</strong> ou <strong>Serviços Tomados</strong> e a barra de busca por CNPJ ou nome. Clique no botão <strong>Ver DANFSE</strong> para visualizar o documento gráfico impresso ou a estrutura XML fonte assinada.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-xs">4</span>
+                  Download em Lote para ZIP e Planilha Excel
+                </h4>
+                <p>
+                  Selecione as notas desejadas nas caixas de seleção. Clique em <strong>Exportar Planilha Excel</strong> para gerar um resumo financeiro consolidado (.xlsx) ou em <strong>Baixar Pacote Completo (ZIP)</strong> para obter todos os XMLs originais e espelhos DANFSE em HTML.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
+              <button
+                onClick={() => setShowManualModal(false)}
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer"
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Política de Privacidade */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-white text-base">
+                  {t.privacyModalTitle}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
+              <h4 className="font-bold text-white text-sm">1. Compromisso com a Segurança e LGPD</h4>
+              <p>
+                A <strong>HelpUS Technology</strong> prioriza a privacidade e a segurança dos dados fiscais dos seus clientes e parceiros. Todas as operações seguem rigorosamente a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
+              </p>
+
+              <h4 className="font-bold text-white text-sm">2. Processamento Efêmero do Certificado Digital A1</h4>
+              <p>
+                O seu Certificado Digital A1 (.pfx) e a senha da chave privada enviados nesta aplicação são processados exclusivamente na memória RAM durante a requisição de consulta mTLS. <strong>Nenhuma chave privada, certificado ou senha é armazenada em disco ou em banco de dados permanente.</strong>
+              </p>
+
+              <h4 className="font-bold text-white text-sm">3. Criptografia em Trânsito</h4>
+              <p>
+                Toda a transmissão de dados entre o seu navegador, os servidores da Vercel e o Ambiente de Distribuição Nacional (ADN) é protegida com criptografia TLS 1.3 de ponta a ponta.
+              </p>
+            </div>
+
+            <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cookie Consent Banner */}
+      {!cookieConsent && (
+        <div className="fixed bottom-16 left-6 right-6 sm:right-auto sm:max-w-md z-50 bg-slate-900 border border-slate-700 shadow-2xl p-4 rounded-2xl flex flex-col gap-3">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="font-bold text-white text-xs">
+                {t.cookieBannerTitle}
+              </h4>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                {t.cookieBannerText}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-800">
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              className="text-[11px] text-slate-400 hover:text-white underline px-2 cursor-pointer"
+            >
+              {t.privacyPolicyLink}
+            </button>
+            <button
+              onClick={handleAcceptCookies}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer"
+            >
+              {t.cookieAcceptBtn}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Animated WhatsApp Button */}
+      <a
+        href="https://wa.me/5583998721848?text=Ol%C3%A1%2C%20gostaria%20de%20ajuda%20com%20o%20HelpUS%20Accounting"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Falar no WhatsApp (83) 99872-1848"
+        className="fixed bottom-16 right-6 z-40 bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-3.5 rounded-full shadow-2xl shadow-emerald-500/40 transition-transform transform hover:scale-110 animate-bounce flex items-center justify-center group"
+      >
+        <MessageCircle className="w-7 h-7 text-slate-950 fill-slate-950" />
+        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-black text-slate-950 ml-0 group-hover:ml-2">
+          (83) 99872-1848
+        </span>
+      </a>
+
+      {/* Fixed Footer (Rodapé Fixo) with Official HelpUS Branding */}
+      <footer className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-800 bg-slate-900/90 backdrop-blur py-3 px-6 text-center text-xs text-slate-400">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-[11px]">
             <span className="font-semibold text-slate-300">{t.footerPortalName}</span>
             <span>•</span>
             <span>© 2026 {t.footerRights}</span>
+            <span>•</span>
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              className="text-slate-400 hover:text-slate-200 underline cursor-pointer"
+            >
+              {t.privacyPolicyLink}
+            </button>
           </div>
 
           <a
             href="https://helpusbr.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-3.5 py-1.5 rounded-full transition group"
+            className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-3.5 py-1 rounded-full transition group"
           >
-            <span className="text-slate-400 group-hover:text-slate-200 transition">
+            <span className="text-[11px] text-slate-400 group-hover:text-slate-200 transition">
               {t.footerDevelopedBy}
             </span>
-            <div className="flex items-center gap-1.5 font-bold text-white">
-              <span className="h-4 w-4 rounded-md bg-amber-500 flex items-center justify-center text-[10px] text-slate-950">
-                H
-              </span>
+            <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+              <img
+                src="/helpus-logo.jpg"
+                alt="HelpUS Logo"
+                className="h-4 w-4 rounded-md object-cover"
+              />
               <span className="text-amber-400 group-hover:text-amber-300 transition">
                 HelpUS Technology
               </span>
