@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const VERIFY_TOKEN = process.env.INSTAGRAM_VERIFY_TOKEN || 'helpus_accounting_secret_token_2026';
-const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN || 'EAAPftN7XjkwBSvycKNmfK9sfNAZA5hAuG6V9rbCbqoqRXgrJLSnzbbk7ptNdZAsCaeOJLRF9vrwRWZAMDefrOqrVOfMNjuyv0cxwiaLZB8TlslCUDzDCArlDYp0bDuSiBGsNT2FsgdEmYXD4ZB014eTZCUST4DKXwxpIBwtyZAY96YI50w2C48ZBfciBa8nm99avrKx1CNjpFZCNh0HFpVAzh';
+const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN || 'EAAPftN7XjkwBSucszOTSMejuurthENaRZCD7fRzNwrqd47vs3XX1kptXGEKcDbu2EcOVVUJKACADaDX7fWFb9dOHVBF3h6180BOwd8dIJIoUncvjU4qViQBdwE4EqZA6OKXuTw3lwlhZBPMxaqYJI6qmCROkaXzz2BDCw2hVuRQr6WhSAnst8GakGau76iZBLa3k5muvd6EjZCQfatjPwPoi6';
 
 /**
  * Meta Webhook Verification (GET)

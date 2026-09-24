@@ -14,7 +14,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 # 3. Gere o User Access Token com a permissão 'instagram_content_publish'.
 
 INSTAGRAM_ACCOUNT_ID = os.getenv("INSTAGRAM_ACCOUNT_ID", "17841470280295397")
-ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN", "EAAPftN7XjkwBSvycKNmfK9sfNAZA5hAuG6V9rbCbqoqRXgrJLSnzbbk7ptNdZAsCaeOJLRF9vrwRWZAMDefrOqrVOfMNjuyv0cxwiaLZB8TlslCUDzDCArlDYp0bDuSiBGsNT2FsgdEmYXD4ZB014eTZCUST4DKXwxpIBwtyZAY96YI50w2C48ZBfciBa8nm99avrKx1CNjpFZCNh0HFpVAzh")
+ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN", "EAAPftN7XjkwBSucszOTSMejuurthENaRZCD7fRzNwrqd47vs3XX1kptXGEKcDbu2EcOVVUJKACADaDX7fWFb9dOHVBF3h6180BOwd8dIJIoUncvjU4qViQBdwE4EqZA6OKXuTw3lwlhZBPMxaqYJI6qmCROkaXzz2BDCw2hVuRQr6WhSAnst8GakGau76iZBLa3k5muvd6EjZCQfatjPwPoi6")
 BASE_URL = f"https://graph.facebook.com/v19.0/{INSTAGRAM_ACCOUNT_ID}"
 
 POSTS = [
