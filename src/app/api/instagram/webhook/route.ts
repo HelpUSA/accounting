@@ -26,25 +26,34 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    console.log('[Instagram Webhook Event Received]:', JSON.stringify(body, null, 2));
 
     if (body.object === 'page' || body.object === 'instagram') {
       const entries = body.entry || [];
 
       for (const entry of entries) {
         const changes = entry.changes || [];
+        const messaging = entry.messaging || [];
+
+        // 1. Comentários no Instagram (Private Reply via comment_id)
         for (const change of changes) {
           const val = change.value || {};
-          const commentText = (val.text || val.message || '').toLowerCase();
           const commentId = val.id;
           const senderId = val.from?.id || val.sender?.id;
 
-          // Se o comentário contiver palavras-chave ativadoras
-          if (commentText && (commentText.includes('xml') || commentText.includes('nfse') || commentText.includes('contador') || commentText.includes('helpus') || commentText.includes('gratis') || commentText.includes('quero'))) {
-            console.log(`[Instagram Webhook] Comentário ativador detectado: "${val.text}". Enviando Direct...`);
+          if (commentId || senderId) {
+            console.log(`[Instagram Webhook] Comentário/evento detectado: "${val.text}" (Comment ID: ${commentId})`);
+            await sendPrivateReplyOrDirect(senderId, commentId);
+          }
+        }
 
-            if (senderId) {
-              await sendDirectMessage(senderId);
-            }
+        // 2. DMs diretas recebidas
+        for (const msg of messaging) {
+          const senderId = msg.sender?.id;
+          const text = msg.message?.text;
+          if (senderId && text) {
+            console.log(`[Instagram Webhook] DM direta recebida de ${senderId}: "${text}"`);
+            await sendDirectMessage(senderId);
           }
         }
       }
@@ -59,13 +68,42 @@ export async function POST(req: NextRequest) {
   }
 }
 
+async function sendPrivateReplyOrDirect(senderId?: string, commentId?: string) {
+  const textMessage = `🚀 Olá! Seja bem-vindo ao HelpUS Accounting!\n\nConheça nossa suíte contábil 100% gratuita para consulta e download em lote de NFS-e, NF-e, CT-e, EFD-Reinf, SPED e Conciliação OFX:\n\n👉 https://accounting.helpusbr.com`;
+
+  if (commentId) {
+    try {
+      const url = `https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
+      const payload = {
+        recipient: { comment_id: commentId },
+        message: { text: textMessage }
+      };
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      console.log('[Instagram Webhook] Private Reply via comment_id:', data);
+      if (data.message_id || data.recipient_id) return;
+    } catch (e) {
+      console.error('[Instagram Private Reply Error]', e);
+    }
+  }
+
+  if (senderId) {
+    await sendDirectMessage(senderId);
+  }
+}
+
 async function sendDirectMessage(recipientId: string) {
   try {
     const url = `https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
     const payload = {
       recipient: { id: recipientId },
       message: {
-        text: `🚀 Olá! Seja bem-vindo ao HelpUS Accounting!\n\nConheça nossa suíte contábil 100% gratuita para consulta e download em lote de NFS-e (SERPRO/ADN), NF-e, CT-e, EFD-Reinf, SPED e Conciliação OFX:\n\n👉 https://accounting.helpusbr.com`
+        text: `🚀 Olá! Seja bem-vindo ao HelpUS Accounting!\n\nConheça nossa suíte contábil 100% gratuita para consulta e download em lote de NFS-e, NF-e, CT-e, EFD-Reinf, SPED e Conciliação OFX:\n\n👉 https://accounting.helpusbr.com`
       }
     };
 

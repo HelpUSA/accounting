@@ -13,8 +13,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 # 2. Vincule sua Conta do Instagram Business com uma Página do Facebook.
 # 3. Gere o User Access Token com a permissão 'instagram_content_publish'.
 
-INSTAGRAM_ACCOUNT_ID = os.getenv("INSTAGRAM_ACCOUNT_ID", "SEU_INSTAGRAM_USER_ID")
-ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN", "SEU_META_ACCESS_TOKEN")
+INSTAGRAM_ACCOUNT_ID = os.getenv("INSTAGRAM_ACCOUNT_ID", "17841470280295397")
+ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN", "EAAPftN7XjkwBSvycKNmfK9sfNAZA5hAuG6V9rbCbqoqRXgrJLSnzbbk7ptNdZAsCaeOJLRF9vrwRWZAMDefrOqrVOfMNjuyv0cxwiaLZB8TlslCUDzDCArlDYp0bDuSiBGsNT2FsgdEmYXD4ZB014eTZCUST4DKXwxpIBwtyZAY96YI50w2C48ZBfciBa8nm99avrKx1CNjpFZCNh0HFpVAzh")
 BASE_URL = f"https://graph.facebook.com/v19.0/{INSTAGRAM_ACCOUNT_ID}"
 
 POSTS = [
