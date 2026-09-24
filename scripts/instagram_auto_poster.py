@@ -2,6 +2,10 @@ import requests
 import json
 import time
 import os
+import sys
+import io
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Configuração da API Oficial do Instagram (Meta Graph API)
 # Para obter o INSTAGRAM_ACCOUNT_ID e ACCESS_TOKEN:
