@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function sendPrivateReplyOrDirect(senderId?: string, commentId?: string) {
-  const textMessage = `🚀 Olá! Seja bem-vindo ao HelpUS Accounting!\n\nConheça nossa suíte contábil 100% gratuita para consulta e download em lote de NFS-e, NF-e, CT-e, EFD-Reinf, SPED e Conciliação OFX:\n\n👉 https://accounting.helpusbr.com`;
+  const textMessage = `🚀 Olá! Seja bem-vindo ao HelpUS Accounting!\n\nConheça nossa suíte contábil 100% gratuita para consulta e download em lote de NFS-e, NF-e, CT-e, EFD-Reinf, SPED e Conciliação OFX:\n\n🌐 Portal de Acesso Gratuito:\nhttps://accounting.helpusbr.com\n\n💬 Falar no WhatsApp com a equipe:\nhttps://wa.me/5583998721848?text=Ol%C3%A1%2C%20vim%20pelo%20Instagram%20e%20gostaria%20de%20ajuda%20com%20o%20HelpUS%20Accounting`;
 
   if (commentId) {
     try {
@@ -100,11 +100,10 @@ async function sendPrivateReplyOrDirect(senderId?: string, commentId?: string) {
 async function sendDirectMessage(recipientId: string) {
   try {
     const url = `https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
+    const textMessage = `🚀 Olá! Seja bem-vindo ao HelpUS Accounting!\n\nConheça nossa suíte contábil 100% gratuita para consulta e download em lote de NFS-e, NF-e, CT-e, EFD-Reinf, SPED e Conciliação OFX:\n\n🌐 Portal de Acesso Gratuito:\nhttps://accounting.helpusbr.com\n\n💬 Falar no WhatsApp com a equipe:\nhttps://wa.me/5583998721848?text=Ol%C3%A1%2C%20vim%20pelo%20Instagram%20e%20gostaria%20de%20ajuda%20com%20o%20HelpUS%20Accounting`;
     const payload = {
       recipient: { id: recipientId },
-      message: {
-        text: `🚀 Olá! Seja bem-vindo ao HelpUS Accounting!\n\nConheça nossa suíte contábil 100% gratuita para consulta e download em lote de NFS-e, NF-e, CT-e, EFD-Reinf, SPED e Conciliação OFX:\n\n👉 https://accounting.helpusbr.com`
-      }
+      message: { text: textMessage }
     };
 
     const res = await fetch(url, {
