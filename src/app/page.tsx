@@ -178,6 +178,25 @@ export default function AccountingPortalPage() {
       if (data.success && data.cert) {
         setCertInfo(data.cert);
         fetchAllModules({ pfxBase64, passphrase, certInfo: data.cert });
+
+        // Dynamically log authenticated company into local storage telemetry
+        try {
+          const newCompany = {
+            id: `EMP-${Math.floor(100 + Math.random() * 900)}`,
+            name: data.cert.companyName || 'EMPRESA CONTABIL AUTENTICADA',
+            cnpj: data.cert.cnpjFormatted || data.cert.cnpj || '00.000.000/0001-00',
+            uf: 'PB',
+            certType: 'e-CNPJ A1 (ICP-Brasil)',
+            validUntil: data.cert.validTo ? new Date(data.cert.validTo).toLocaleDateString('pt-BR') : 'Válido',
+            totalOps: 1,
+            lastAccess: new Date().toLocaleString('pt-BR'),
+            status: (data.cert.daysRemaining || 365) < 30 ? 'Próximo ao Vencimento' : 'Válido'
+          };
+          const existingStr = localStorage.getItem('helpus_authenticated_companies');
+          const existingList = existingStr ? JSON.parse(existingStr) : [];
+          const updatedList = [newCompany, ...existingList.filter((c: any) => c.cnpj !== newCompany.cnpj)];
+          localStorage.setItem('helpus_authenticated_companies', JSON.stringify(updatedList));
+        } catch (e) {}
       } else {
         setCertError(data.error || 'Senha incorreta ou certificado inválido.');
       }

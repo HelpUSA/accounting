@@ -76,7 +76,18 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
   const [searchCompany, setSearchCompany] = useState<string>('');
 
   // List of Companies that accessed via Certificate A1
-  const [companiesList] = useState<AuthenticatedCompany[]>([
+  const [companiesList, setCompaniesList] = useState<AuthenticatedCompany[]>([
+    {
+      id: 'EMP-000',
+      name: 'MF CONTABILIDADE E ASSESSORIA LTDA (MFAccounting)',
+      cnpj: '28.192.483/0001-90',
+      uf: 'PB',
+      certType: 'e-CNPJ A1 (ICP-Brasil / Certisign)',
+      validUntil: '18/11/2026',
+      totalOps: 1840,
+      lastAccess: '2026-09-26 17:10:00',
+      status: 'Válido'
+    },
     {
       id: 'EMP-001',
       name: 'HELPUS MULTISERVICOS E TECNOLOGIA LTDA',
@@ -155,6 +166,26 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
       status: 'Próximo ao Vencimento'
     }
   ]);
+
+  // Read dynamically logged companies from localStorage
+  useEffect(() => {
+    try {
+      const storedStr = localStorage.getItem('helpus_authenticated_companies');
+      if (storedStr) {
+        const storedList = JSON.parse(storedStr);
+        if (Array.isArray(storedList) && storedList.length > 0) {
+          setCompaniesList(prev => {
+            const combined = [...storedList, ...prev];
+            const uniqueMap = new Map();
+            combined.forEach(c => uniqueMap.set(c.cnpj, c));
+            return Array.from(uniqueMap.values());
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao ler certificados em localStorage:', err);
+    }
+  }, []);
 
   // Captcha & Auth states
   const [captchaVerified, setCaptchaVerified] = useState<boolean>(false);
