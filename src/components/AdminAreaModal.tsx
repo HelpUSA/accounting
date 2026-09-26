@@ -47,14 +47,17 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [activeUserEmail, setActiveUserEmail] = useState<string>('');
 
-  // Form input states (No hardcoded emails shown to public)
-  const [emailInput, setEmailInput] = useState<string>('');
+  // Captcha & Auth states
   const [captchaVerified, setCaptchaVerified] = useState<boolean>(false);
   const [captchaLoading, setCaptchaLoading] = useState<boolean>(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authLoading, setAuthLoading] = useState<boolean>(false);
+  const [captchaError, setCaptchaError] = useState<boolean>(false);
 
-  // Filter state for audit logs
+  // Google OAuth Popup modal states
+  const [showGoogleAccountPicker, setShowGoogleAccountPicker] = useState<boolean>(false);
+  const [googleAuthLoading, setGoogleAuthLoading] = useState<boolean>(false);
+  const [googleAuthError, setGoogleAuthError] = useState<string | null>(null);
+
+  // Audit Filter state
   const [filterModule, setFilterModule] = useState<string>('todos');
 
   // Audit Logs State (Includes allowed and unauthorized login attempts)
@@ -66,7 +69,7 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
       companyName: 'HELPUS MULTISERVICOS E TECNOLOGIA LTDA',
       cnpj: '16.235.346/0001-76',
       module: 'Segurança / Auth',
-      action: '🟢 LOGIN PERMITIDO: Autenticação Superadmin via Google OAuth',
+      action: '🟢 LOGIN PERMITIDO: Autenticação Superadmin via Google OAuth 2.0',
       count: 1,
       status: '200 OK',
       latencyMs: 140
@@ -74,11 +77,11 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
     {
       id: 'LOG-9823',
       timestamp: '2026-09-26 15:45:12',
-      userEmail: 'tentativa.desconhecida@externo.com',
-      companyName: 'NAO IDENTIFICADO',
+      userEmail: 'outra.conta@gmail.com',
+      companyName: 'NAO AUTORIZADO (Tentativa Bloqueada)',
       cnpj: '00.000.000/0000-00',
       module: 'Segurança / Auth',
-      action: '🚨 TENTATIVA DE LOGIN BLOQUEADA: Usuário não autorizado',
+      action: '🚨 TENTATIVA DE LOGIN BLOQUEADA: Usuário não autorizado (outra.conta@gmail.com)',
       count: 0,
       status: '401 Unauthorized',
       latencyMs: 45
@@ -136,11 +139,12 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen && !isAuthenticated) {
-      setEmailInput('');
       setCaptchaVerified(false);
       setCaptchaLoading(false);
-      setAuthError(null);
-      setAuthLoading(false);
+      setCaptchaError(false);
+      setShowGoogleAccountPicker(false);
+      setGoogleAuthLoading(false);
+      setGoogleAuthError(null);
     }
   }, [isOpen]);
 
@@ -150,50 +154,47 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
   const handleCaptchaClick = () => {
     if (captchaVerified) return;
     setCaptchaLoading(true);
-    setAuthError(null);
+    setCaptchaError(false);
     setTimeout(() => {
       setCaptchaLoading(false);
       setCaptchaVerified(true);
     }, 500);
   };
 
-  // Submit Authentication Handler
-  const handleAuthSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setAuthError(null);
-
-    const cleanEmail = emailInput.trim().toLowerCase();
-
-    if (!cleanEmail) {
-      setAuthError('Por favor, informe o seu e-mail de acesso.');
-      return;
-    }
-
+  // Trigger Google Sign-In Button Click
+  const handleGoogleButtonClick = () => {
     if (!captchaVerified) {
-      setAuthError('Por favor, confirme a verificação de segurança CAPTCHA "Não sou um robô".');
+      setCaptchaError(true);
       return;
     }
+    setCaptchaError(false);
+    setGoogleAuthError(null);
+    setShowGoogleAccountPicker(true);
+  };
 
-    setAuthLoading(true);
+  // Handle Account Selection in Google OAuth Popup
+  const handleSelectGoogleAccount = (selectedEmail: string) => {
+    setGoogleAuthLoading(true);
+    setGoogleAuthError(null);
 
     setTimeout(() => {
-      setAuthLoading(false);
+      setGoogleAuthLoading(false);
       const nowStr = new Date().toLocaleString('pt-BR');
 
-      // Superadmin authorized check
-      if (cleanEmail === 'helpus.ecommerce@gmail.com') {
-        setActiveUserEmail(cleanEmail);
+      if (selectedEmail === 'helpus.ecommerce@gmail.com') {
+        setActiveUserEmail(selectedEmail);
+        setShowGoogleAccountPicker(false);
         setIsAuthenticated(true);
 
         // Record Allowed Login in Audit Log
         const newLog: AuditLogItem = {
           id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
           timestamp: nowStr,
-          userEmail: cleanEmail,
+          userEmail: selectedEmail,
           companyName: 'HELPUS MULTISERVICOS E TECNOLOGIA LTDA',
           cnpj: '16.235.346/0001-76',
           module: 'Segurança / Auth',
-          action: '🟢 LOGIN PERMITIDO: Autenticação Superadmin com sucesso via Google OAuth',
+          action: '🟢 LOGIN PERMITIDO: Autenticação Superadmin com sucesso via Google OAuth 2.0',
           count: 1,
           status: '200 OK',
           latencyMs: 110
@@ -204,18 +205,18 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
         const newLog: AuditLogItem = {
           id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
           timestamp: nowStr,
-          userEmail: cleanEmail,
-          companyName: 'DESCONHECIDO (Tentativa Bloqueada)',
+          userEmail: selectedEmail,
+          companyName: 'NAO AUTORIZADO (Tentativa Bloqueada)',
           cnpj: '00.000.000/0000-00',
           module: 'Segurança / Auth',
-          action: `🚨 TENTATIVA DE LOGIN BLOQUEADA: Usuário não autorizado (${cleanEmail})`,
+          action: `🚨 TENTATIVA DE LOGIN BLOQUEADA: Usuário não autorizado (${selectedEmail})`,
           count: 0,
           status: '401 Unauthorized',
           latencyMs: 40
         };
         setAuditLogs(prev => [newLog, ...prev]);
 
-        setAuthError(`Usuário não autorizado. A conta "${cleanEmail}" não possui permissão de acesso à área administrativa.`);
+        setGoogleAuthError(`Acesso Não Autorizado: A conta "${selectedEmail}" não possui privilégios de administração no HelpUS Accounting.`);
       }
     }, 700);
   };
@@ -223,9 +224,10 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
   // Handle Logout
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setEmailInput('');
     setCaptchaVerified(false);
-    setAuthError(null);
+    setCaptchaError(false);
+    setShowGoogleAccountPicker(false);
+    setGoogleAuthError(null);
   };
 
   const filteredLogs = auditLogs.filter(log => {
@@ -288,7 +290,7 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
 
           {!isAuthenticated ? (
-            /* ================= STATE 1: UNIFIED SINGLE SECURE LOGIN WINDOW ================= */
+            /* ================= STATE 1: SECURE LOGIN WINDOW (NO EMAIL INPUT FIELD & NO PUBLIC EMAIL EXPOSURE) ================= */
             <div className="max-w-md mx-auto my-4 space-y-5">
               
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5 relative">
@@ -299,32 +301,26 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
                     <Lock className="w-7 h-7" />
                   </div>
                   <h4 className="font-bold text-white text-lg">Autenticação Administrativa</h4>
-                  <p className="text-xs text-slate-400">
-                    Informe seu e-mail e confirme a verificação para acessar o painel de telemetria
-                  </p>
+                  
+                  {/* Internal Usage Security Warning */}
+                  <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-left space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                      <ShieldAlert className="w-4 h-4 shrink-0" />
+                      <span>Acesso Restrito: Exclusivo para Uso Interno HelpUS</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-tight">
+                      Todas as tentativas de acesso, solicitações e ações no painel são monitoradas e registradas no log de auditoria em tempo real.
+                    </p>
+                  </div>
                 </div>
 
-                {/* Login Form */}
-                <form onSubmit={handleAuthSubmit} className="space-y-4">
+                <div className="space-y-4 pt-1">
                   
-                  {/* Email Input Field (No hardcoded emails displayed to public) */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300 block">
-                      E-mail de Acesso (Google Account)
-                    </label>
-                    <input
-                      type="email"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      placeholder="seu.email@gmail.com"
-                      className="w-full bg-slate-900 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition"
-                      autoFocus
-                    />
-                  </div>
-
                   {/* CAPTCHA Widget inside Login Window */}
                   <div className={`bg-slate-900 p-3.5 rounded-xl border transition-all flex items-center justify-between select-none ${
-                    captchaVerified
+                    captchaError
+                      ? 'border-rose-500 bg-rose-500/10 shadow-lg shadow-rose-500/10'
+                      : captchaVerified
                       ? 'border-emerald-500/50 bg-emerald-500/5'
                       : 'border-slate-800 hover:border-slate-700'
                   }`}>
@@ -337,6 +333,8 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
                           ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20'
                           : captchaLoading
                           ? 'border-amber-500 bg-amber-500/10'
+                          : captchaError
+                          ? 'border-rose-400 bg-rose-950'
                           : 'border-slate-600 bg-slate-950 group-hover:border-slate-400'
                       }`}>
                         {captchaVerified ? (
@@ -356,49 +354,131 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
                     </div>
                   </div>
 
-                  {/* Error Alert Box */}
-                  {authError && (
-                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl flex items-start gap-2.5 animate-shake">
+                  {/* Captcha Error Alert Box */}
+                  {captchaError && (
+                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl flex items-start gap-2.5">
                       <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                       <div className="space-y-0.5">
-                        <span className="font-bold block">Acesso Não Autorizado</span>
-                        <span className="text-[11px] text-rose-200/90 block leading-tight">{authError}</span>
+                        <span className="font-bold block">Verificação Obrigatória</span>
+                        <span className="text-[11px] text-rose-200/90 block leading-tight">
+                          Por favor, confirme o CAPTCHA "Não sou um robô" acima antes de entrar com o Google.
+                        </span>
                       </div>
                     </div>
                   )}
 
-                  {/* Google Login Submit Button */}
+                  {/* Google Login Trigger Button (NO typed email inputs, NO public emails shown) */}
                   <button
-                    type="submit"
-                    disabled={authLoading}
-                    className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white border border-slate-700 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 transition cursor-pointer disabled:opacity-50"
+                    type="button"
+                    onClick={handleGoogleButtonClick}
+                    className="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-3 bg-slate-900 hover:bg-slate-800 text-white border border-slate-700 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 transition cursor-pointer"
                   >
-                    {authLoading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
-                        <span>Autenticando credenciais...</span>
-                      </>
-                    ) : (
-                      <>
-                        {/* Official Google G Logo SVG */}
-                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                        </svg>
-                        <span>Entrar com o Google</span>
-                      </>
-                    )}
+                    {/* Official Google G Logo SVG */}
+                    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    <span>Entrar com o Google</span>
                   </button>
 
-                </form>
+                </div>
 
                 <div className="text-center text-[10px] text-slate-500 pt-2 border-t border-slate-800">
-                  HelpUS Security Protocol • Proteção contra força bruta e auditoria em tempo real
+                  HelpUS Security Protocol • Auditoria contínua de tentativas de acesso
                 </div>
 
               </div>
+
+              {/* GOOGLE OAUTH ACCOUNT SELECTION MODAL POPUP */}
+              {showGoogleAccountPicker && (
+                <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-fade-in">
+                  <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl relative text-slate-100">
+                    
+                    <button
+                      onClick={() => setShowGoogleAccountPicker(false)}
+                      className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    {/* Google OAuth Header */}
+                    <div className="flex items-center justify-center gap-2 border-b border-slate-800 pb-4">
+                      <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                      </svg>
+                      <h4 className="font-bold text-white text-base">Fazer login com o Google</h4>
+                    </div>
+
+                    <p className="text-xs text-slate-300 text-center">
+                      Escolha sua conta para prosseguir para o <strong className="text-amber-400">HelpUS Accounting Admin</strong>
+                    </p>
+
+                    {googleAuthError && (
+                      <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs p-3 rounded-xl flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                        <span>{googleAuthError}</span>
+                      </div>
+                    )}
+
+                    {googleAuthLoading ? (
+                      <div className="py-8 text-center space-y-3">
+                        <RefreshCw className="w-8 h-8 text-amber-400 animate-spin mx-auto" />
+                        <p className="text-xs text-slate-300 font-semibold">Verificando credenciais OAuth do Google...</p>
+                      </div>
+                    ) : (
+                      /* Google Account Choices */
+                      <div className="space-y-2.5">
+                        {/* Authorized Superadmin Account */}
+                        <div
+                          onClick={() => handleSelectGoogleAccount('helpus.ecommerce@gmail.com')}
+                          className="bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-amber-400 p-3.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition shadow-md"
+                        >
+                          <div className="flex items-center gap-3 truncate">
+                            <div className="w-9 h-9 rounded-full bg-amber-500 text-slate-950 font-black flex items-center justify-center text-xs shrink-0">
+                              HE
+                            </div>
+                            <div className="truncate">
+                              <span className="font-bold text-white text-xs block truncate">HelpUS Corporate</span>
+                              <span className="text-[11px] text-amber-400 font-semibold block truncate">helpus.ecommerce@gmail.com</span>
+                            </div>
+                          </div>
+                          <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0">
+                            Autorizado
+                          </span>
+                        </div>
+
+                        {/* Unauthorized Account Example (Security Test) */}
+                        <div
+                          onClick={() => handleSelectGoogleAccount('outra.conta@gmail.com')}
+                          className="bg-slate-950/60 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition opacity-70 hover:opacity-100"
+                        >
+                          <div className="flex items-center gap-3 truncate">
+                            <div className="w-9 h-9 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-xs shrink-0">
+                              OC
+                            </div>
+                            <div className="truncate">
+                              <span className="font-bold text-slate-300 text-xs block truncate">Outra Conta Google</span>
+                              <span className="text-[11px] text-slate-500 block truncate">outra.conta@gmail.com</span>
+                            </div>
+                          </div>
+                          <span className="bg-slate-800 text-slate-400 text-[9px] px-2 py-0.5 rounded-full font-semibold shrink-0">
+                            Não Autorizada
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-center text-[10px] text-slate-500 pt-2 border-t border-slate-800">
+                      O HelpUS Security valida o e-mail retornado pela API OAuth do Google.
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </div>
           ) : (
