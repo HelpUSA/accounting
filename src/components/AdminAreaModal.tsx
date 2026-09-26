@@ -167,25 +167,42 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
     }
   ]);
 
-  // Read dynamically logged companies from localStorage
+  // Read dynamically logged companies & audit logs from localStorage whenever modal opens
   useEffect(() => {
-    try {
-      const storedStr = localStorage.getItem('helpus_authenticated_companies');
-      if (storedStr) {
-        const storedList = JSON.parse(storedStr);
-        if (Array.isArray(storedList) && storedList.length > 0) {
-          setCompaniesList(prev => {
-            const combined = [...storedList, ...prev];
-            const uniqueMap = new Map();
-            combined.forEach(c => uniqueMap.set(c.cnpj, c));
-            return Array.from(uniqueMap.values());
-          });
+    if (isOpen) {
+      try {
+        // Sync Companies
+        const storedStr = localStorage.getItem('helpus_authenticated_companies');
+        if (storedStr) {
+          const storedList = JSON.parse(storedStr);
+          if (Array.isArray(storedList) && storedList.length > 0) {
+            setCompaniesList(prev => {
+              const combined = [...storedList, ...prev];
+              const uniqueMap = new Map();
+              combined.forEach(c => uniqueMap.set(c.cnpj, c));
+              return Array.from(uniqueMap.values());
+            });
+          }
         }
+
+        // Sync Audit Logs
+        const storedLogsStr = localStorage.getItem('helpus_audit_logs');
+        if (storedLogsStr) {
+          const storedLogs = JSON.parse(storedLogsStr);
+          if (Array.isArray(storedLogs) && storedLogs.length > 0) {
+            setAuditLogs(prev => {
+              const combined = [...storedLogs, ...prev];
+              const uniqueMap = new Map();
+              combined.forEach(l => uniqueMap.set(l.id, l));
+              return Array.from(uniqueMap.values());
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao ler dados em localStorage:', err);
       }
-    } catch (err) {
-      console.error('Erro ao ler certificados em localStorage:', err);
     }
-  }, []);
+  }, [isOpen]);
 
   // Captcha & Auth states
   const [captchaVerified, setCaptchaVerified] = useState<boolean>(false);
