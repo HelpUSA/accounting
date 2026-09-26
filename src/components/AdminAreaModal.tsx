@@ -240,8 +240,13 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
           callback: async (tokenResponse: any) => {
             if (tokenResponse.error) {
               setGoogleAuthLoading(false);
-              if (tokenResponse.error !== 'popup_closed_by_user') {
-                setGoogleAuthError(`Erro na autenticação Google: ${tokenResponse.error}`);
+              if (tokenResponse.error === 'popup_closed_by_user') {
+                return;
+              }
+              if (tokenResponse.error === 'origin_mismatch') {
+                setGoogleAuthError('Erro 400: origin_mismatch. O domínio https://accounting.helpusbr.com precisa ser adicionado às Origens JavaScript autorizadas no Console do Google Cloud para o Client ID 812202824664-s716306ibb7c15jh7aok2v0lfnuocpkn.apps.googleusercontent.com.');
+              } else {
+                setGoogleAuthError(`Erro na autenticação Google (${tokenResponse.error}). Verifique as configurações do Google Cloud Console.`);
               }
               return;
             }
