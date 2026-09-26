@@ -21,7 +21,12 @@ import {
   Check,
   ShieldAlert,
   KeyRound,
-  FileText
+  FileText,
+  Building2,
+  Search,
+  Award,
+  MapPin,
+  Calendar
 } from 'lucide-react';
 
 interface AdminAreaModalProps {
@@ -43,6 +48,18 @@ interface AuditLogItem {
   latencyMs: number;
 }
 
+interface AuthenticatedCompany {
+  id: string;
+  name: string;
+  cnpj: string;
+  uf: string;
+  certType: string;
+  validUntil: string;
+  totalOps: number;
+  lastAccess: string;
+  status: 'Válido' | 'Próximo ao Vencimento';
+}
+
 declare global {
   interface Window {
     google?: any;
@@ -54,6 +71,90 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "8122028246
 export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAreaModalProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [activeUserEmail, setActiveUserEmail] = useState<string>('');
+
+  // Search state for Companies Directory
+  const [searchCompany, setSearchCompany] = useState<string>('');
+
+  // List of Companies that accessed via Certificate A1
+  const [companiesList] = useState<AuthenticatedCompany[]>([
+    {
+      id: 'EMP-001',
+      name: 'HELPUS MULTISERVICOS E TECNOLOGIA LTDA',
+      cnpj: '16.235.346/0001-76',
+      uf: 'PB',
+      certType: 'e-CNPJ A1 (ICP-Brasil)',
+      validUntil: '15/12/2026',
+      totalOps: 1240,
+      lastAccess: '2026-09-26 16:12:05',
+      status: 'Válido'
+    },
+    {
+      id: 'EMP-002',
+      name: 'OFICIO DE REGISTRO CIVIL E TABELIONATO DE NOTAS',
+      cnpj: '04.123.456/0001-89',
+      uf: 'SP',
+      certType: 'e-CNPJ A1 (Certisign)',
+      validUntil: '08/11/2026',
+      totalOps: 890,
+      lastAccess: '2026-09-26 14:32:05',
+      status: 'Válido'
+    },
+    {
+      id: 'EMP-003',
+      name: 'DM SERVICOS MEDICOS E HOSPITALARES LTDA',
+      cnpj: '12.876.543/0001-10',
+      uf: 'RJ',
+      certType: 'e-PJ A1 (Valid)',
+      validUntil: '20/01/2027',
+      totalOps: 640,
+      lastAccess: '2026-09-26 14:15:22',
+      status: 'Válido'
+    },
+    {
+      id: 'EMP-004',
+      name: 'POSTO DE COMBUSTIVEIS E CONVENIENCIA LTDA',
+      cnpj: '45.321.987/0001-55',
+      uf: 'MG',
+      certType: 'e-CNPJ A1 (Serasa)',
+      validUntil: '04/10/2026',
+      totalOps: 520,
+      lastAccess: '2026-09-26 13:50:41',
+      status: 'Próximo ao Vencimento'
+    },
+    {
+      id: 'EMP-005',
+      name: 'TRANSPORTE EXPRESS LOGISTICA E CARGAS SA',
+      cnpj: '33.555.777/0001-22',
+      uf: 'PR',
+      certType: 'e-CNPJ A1 (Soluti)',
+      validUntil: '14/02/2027',
+      totalOps: 410,
+      lastAccess: '2026-09-26 13:10:14',
+      status: 'Válido'
+    },
+    {
+      id: 'EMP-006',
+      name: 'AGROPECUARIA E GRAOS DO CERRADO LTDA',
+      cnpj: '77.888.999/0001-44',
+      uf: 'MT',
+      certType: 'e-CNPJ A1 (ICP-Brasil)',
+      validUntil: '29/03/2027',
+      totalOps: 380,
+      lastAccess: '2026-09-25 18:40:12',
+      status: 'Válido'
+    },
+    {
+      id: 'EMP-007',
+      name: 'SUPERMERCADO E ATACADO CENTRAL LTDA',
+      cnpj: '21.444.666/0001-88',
+      uf: 'PE',
+      certType: 'e-CNPJ A1 (Certisign)',
+      validUntil: '19/08/2026',
+      totalOps: 310,
+      lastAccess: '2026-09-25 17:15:09',
+      status: 'Próximo ao Vencimento'
+    }
+  ]);
 
   // Captcha & Auth states
   const [captchaVerified, setCaptchaVerified] = useState<boolean>(false);
@@ -301,6 +402,15 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
     if (filterModule === 'todos') return true;
     if (filterModule === 'auth') return log.module.toLowerCase().includes('auth') || log.module.toLowerCase().includes('segurança');
     return log.module.toLowerCase().includes(filterModule.toLowerCase());
+  });
+
+  const filteredCompanies = companiesList.filter(emp => {
+    const query = searchCompany.toLowerCase().trim();
+    if (!query) return true;
+    return emp.name.toLowerCase().includes(query) ||
+           emp.cnpj.includes(query) ||
+           emp.uf.toLowerCase().includes(query) ||
+           emp.certType.toLowerCase().includes(query);
   });
 
   // Export Telemetry Report
@@ -671,6 +781,82 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
                       <div className="bg-gradient-to-r from-amber-400 to-yellow-300 h-2.5 rounded-full" style={{ width: '3%' }}></div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Companies & A1 Digital Certificates Directory */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-3">
+                  <div>
+                    <h4 className="font-bold text-white text-sm sm:text-base flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-amber-400" /> Diretório de Empresas & Certificados Digital A1
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Relação de empresas e escritórios contábeis que autenticaram e utilizaram a Suite HelpUS
+                    </p>
+                  </div>
+
+                  {/* Search Input for Companies */}
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Buscar empresa, CNPJ ou UF..."
+                      value={searchCompany}
+                      onChange={(e) => setSearchCompany(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-amber-400 text-xs text-slate-200 pl-8 pr-3 py-1.5 rounded-lg outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Companies Table */}
+                <div className="overflow-x-auto border border-slate-800 rounded-xl max-h-[300px]">
+                  <table className="w-full text-xs text-left text-slate-300">
+                    <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] border-b border-slate-800 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-3 py-2.5">Razão Social / Empresa</th>
+                        <th className="px-3 py-2.5">CNPJ</th>
+                        <th className="px-3 py-2.5 text-center">UF</th>
+                        <th className="px-3 py-2.5">Certificado A1</th>
+                        <th className="px-3 py-2.5 text-right">Requisições</th>
+                        <th className="px-3 py-2.5">Último Acesso</th>
+                        <th className="px-3 py-2.5 text-center">Status A1</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                      {filteredCompanies.map(emp => (
+                        <tr key={emp.id} className="hover:bg-slate-900/50 transition">
+                          <td className="px-3 py-2.5 font-sans font-bold text-white truncate max-w-[220px]" title={emp.name}>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <span className="truncate">{emp.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2.5 text-amber-400 font-semibold">{emp.cnpj}</td>
+                          <td className="px-3 py-2.5 text-center font-sans font-bold text-slate-300">
+                            <span className="bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-[10px]">
+                              {emp.uf}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 font-sans text-slate-300">
+                            <span className="block text-[11px] font-semibold text-slate-200">{emp.certType}</span>
+                            <span className="block text-[10px] text-slate-400">Validade: {emp.validUntil}</span>
+                          </td>
+                          <td className="px-3 py-2.5 text-right font-bold text-emerald-400 font-sans">{emp.totalOps.toLocaleString()} ops</td>
+                          <td className="px-3 py-2.5 text-slate-400 text-[10px] font-sans">{emp.lastAccess}</td>
+                          <td className="px-3 py-2.5 text-center whitespace-nowrap font-sans">
+                            <span className={`px-2 py-0.5 rounded font-bold text-[10px] border ${
+                              emp.status === 'Válido'
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                            }`}>
+                              {emp.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
