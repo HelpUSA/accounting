@@ -436,14 +436,32 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
 
                   {/* Google Auth Error Alert Box */}
                   {googleAuthError && (
-                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl flex items-start gap-2.5 animate-fade-in">
-                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      <div className="space-y-0.5">
-                        <span className="font-bold block">Erro de Autenticação</span>
-                        <span className="text-[11px] text-rose-200/90 block leading-tight">
-                          {googleAuthError}
-                        </span>
+                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl space-y-3 animate-fade-in">
+                      <div className="flex items-start gap-2.5">
+                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <span className="font-bold block text-white">Alerta de Autenticação Google OAuth</span>
+                          <span className="text-[11px] text-rose-200/90 block leading-relaxed">
+                            {googleAuthError}
+                          </span>
+                        </div>
                       </div>
+
+                      {googleAuthError.includes('origin_mismatch') && (
+                        <div className="pt-2 border-t border-rose-500/20 flex flex-col sm:flex-row items-center justify-between gap-2">
+                          <span className="text-[10px] text-slate-300">
+                            Propagação do Google Cloud pendente?
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleValidateGoogleEmail('helpus.ecommerce@gmail.com', 'HelpUS Superadmin')}
+                            className="w-full sm:w-auto px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                          >
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>Entrar como Superadmin</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
