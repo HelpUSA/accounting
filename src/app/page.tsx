@@ -44,6 +44,7 @@ import { ReinfSummary } from '@/lib/reinf-generator';
 import { BankTransaction, ConciliacaoSummary } from '@/lib/ofx-parser';
 import { formatCurrency, safeNum } from '@/lib/formatters';
 import { Language, translations } from '@/lib/i18n';
+import AdminAreaModal from '@/components/AdminAreaModal';
 
 interface CertMetadata {
   cnpj: string;
@@ -124,9 +125,10 @@ export default function AccountingPortalPage() {
   const [previewItem, setPreviewItem] = useState<{ type: 'danfse' | 'danfe' | 'dacte'; item: any } | null>(null);
   const [previewTab, setPreviewTab] = useState<'graphic' | 'xml'>('graphic');
 
-  // Modais de informação
+  // Modais de informação & Administração
   const [showManualModal, setShowManualModal] = useState<boolean>(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState<boolean>(false);
+  const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
 
   // Cookie banner state
   const [cookieConsent, setCookieConsent] = useState<boolean>(true);
@@ -578,6 +580,17 @@ export default function AccountingPortalPage() {
               ES
             </button>
           </div>
+
+          {/* Botão Discreto de Área Administrativa (após a seleção de idiomas) */}
+          <button
+            onClick={() => setShowAdminModal(true)}
+            className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-amber-400 border border-slate-800 hover:border-amber-500/50 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer shadow-sm ml-0.5"
+            title="Área Administrativa & Telemetria HelpUS"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">{t.adminAreaBtn}</span>
+            <span className="sm:hidden">Admin</span>
+          </button>
         </div>
       </header>
 
@@ -1667,6 +1680,13 @@ export default function AccountingPortalPage() {
           </a>
         </div>
       </footer>
+
+      {/* Modal de Área Administrativa e Telemetria */}
+      <AdminAreaModal
+        isOpen={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+        lang={lang}
+      />
     </div>
   );
 }

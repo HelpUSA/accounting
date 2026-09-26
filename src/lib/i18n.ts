@@ -48,6 +48,8 @@ export interface Translations {
   footerPortalName: string;
 
   // Modals & Banners
+  adminAreaBtn: string;
+  adminModalTitle: string;
   userManualBtn: string;
   privacyPolicyLink: string;
   cookieBannerTitle: string;
@@ -133,6 +135,8 @@ export const translations: Record<Language, Translations> = {
     footerRights: 'Todos os direitos reservados.',
     footerPortalName: 'HelpUS Accounting Suite — Multi-Tenant Fiscal Engine',
 
+    adminAreaBtn: 'Área Admin',
+    adminModalTitle: 'Área Administrativa & Telemetria HelpUS',
     userManualBtn: 'Manual do Usuário',
     privacyPolicyLink: 'Política de Privacidade',
     cookieBannerTitle: 'Aviso de Cookies & LGPD',
@@ -218,6 +222,8 @@ export const translations: Record<Language, Translations> = {
     footerRights: 'All rights reserved.',
     footerPortalName: 'HelpUS Accounting Suite — Multi-Tenant Fiscal Engine',
 
+    adminAreaBtn: 'Admin Area',
+    adminModalTitle: 'HelpUS Administrative Area & Telemetry',
     userManualBtn: 'User Manual',
     privacyPolicyLink: 'Privacy Policy',
     cookieBannerTitle: 'Cookies & Privacy Notice',
@@ -303,6 +309,8 @@ export const translations: Record<Language, Translations> = {
     footerRights: 'Todos los derechos reservados.',
     footerPortalName: 'HelpUS Accounting Suite — Multi-Tenant Fiscal Engine',
 
+    adminAreaBtn: 'Área Admin',
+    adminModalTitle: 'Área Administrativa y Telemetría HelpUS',
     userManualBtn: 'Manual de Usuario',
     privacyPolicyLink: 'Política de Privacidad',
     cookieBannerTitle: 'Aviso de Cookies y Privacidad',
