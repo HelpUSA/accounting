@@ -655,144 +655,134 @@ export default function AdminAreaModal({ isOpen, onClose, lang = 'pt' }: AdminAr
                   </div>
                 </div>
               </div>
+
+              {/* Audit Log Table (Quem usou & Tentativas de Login Permitidas / Bloqueadas) */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-3">
+                  <div>
+                    <h4 className="font-bold text-white text-sm sm:text-base flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-amber-400" /> Registro de Auditoria & Tentativas de Login em Tempo Real
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Histórico em tempo real de acessos permitidos, tentativas de login bloqueadas e ações no sistema
+                    </p>
+                  </div>
+
+                  {/* Module Filter Tabs */}
+                  <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs font-semibold overflow-x-auto max-w-full">
+                    <button
+                      onClick={() => setFilterModule('todos')}
+                      className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                        filterModule === 'todos' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => setFilterModule('auth')}
+                      className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                        filterModule === 'auth' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Segurança / Auth
+                    </button>
+                    <button
+                      onClick={() => setFilterModule('nfs-e')}
+                      className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                        filterModule === 'nfs-e' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      NFS-e
+                    </button>
+                    <button
+                      onClick={() => setFilterModule('reinf')}
+                      className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                        filterModule === 'reinf' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Reinf
+                    </button>
+                  </div>
+                </div>
+
+                {/* Audit Table */}
+                <div className="overflow-x-auto border border-slate-800 rounded-xl max-h-[350px]">
+                  <table className="w-full text-xs text-left text-slate-300">
+                    <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] border-b border-slate-800 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-3 py-2.5">Data / Hora</th>
+                        <th className="px-3 py-2.5">Usuário / Email</th>
+                        <th className="px-3 py-2.5">Empresa / CNPJ</th>
+                        <th className="px-3 py-2.5">Módulo</th>
+                        <th className="px-3 py-2.5">Ação Executada</th>
+                        <th className="px-3 py-2.5 text-right">Qtd</th>
+                        <th className="px-3 py-2.5 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                      {filteredLogs.map(log => (
+                        <tr key={log.id} className={`hover:bg-slate-900/50 transition ${
+                          log.status === '401 Unauthorized' ? 'bg-rose-500/5' : ''
+                        }`}>
+                          <td className="px-3 py-2.5 whitespace-nowrap text-slate-400">{log.timestamp}</td>
+                          <td className="px-3 py-2.5 font-sans font-semibold text-white">{log.userEmail}</td>
+                          <td className="px-3 py-2.5 font-sans truncate max-w-[200px]" title={log.companyName}>
+                            <span className="text-slate-200 block truncate">{log.companyName}</span>
+                            <span className="text-[10px] text-slate-500 block">{log.cnpj}</span>
+                          </td>
+                          <td className="px-3 py-2.5 font-sans">
+                            <span className={`px-2 py-0.5 rounded font-semibold text-[10px] border ${
+                              log.module.includes('Auth') || log.module.includes('Segurança')
+                                ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
+                                : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                            }`}>
+                              {log.module}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 font-sans">
+                            <span className={log.status === '401 Unauthorized' ? 'text-rose-400 font-bold' : 'text-slate-300'}>
+                              {log.action}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 text-right font-bold text-amber-400">{log.count}</td>
+                          <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                            <span className={`px-2 py-0.5 rounded font-bold text-[10px] border ${
+                              log.status === '401 Unauthorized'
+                                ? 'bg-rose-500/20 text-rose-400 border-rose-500/30 animate-pulse'
+                                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            }`}>
+                              {log.status} ({log.latencyMs}ms)
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Health & Control Footer */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Portal Nacional ADN: ONLINE
+                  </span>
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    SERPRO mTLS Gateway: ONLINE
+                  </span>
+                </div>
+
+                <div className="text-[11px] text-slate-500">
+                  HelpUS Accounting Telemetry Engine v2.0 • Build 2026-09
+                </div>
+              </div>
+
             </div>
           )}
 
-          {/* Audit Log Table (Quem usou & Tentativas de Login Permitidas / Bloqueadas) */}
-          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-3">
-              <div>
-                <h4 className="font-bold text-white text-sm sm:text-base flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-amber-400" /> Registro de Auditoria & Tentativas de Login em Tempo Real
-                </h4>
-                <p className="text-xs text-slate-400">
-                  Histórico em tempo real de acessos permitidos, tentativas de login bloqueadas e ações no sistema
-                </p>
-              </div>
-
-              {/* Module Filter Tabs */}
-              <div className="flex items-center gap-2">
-                {!isAuthenticated && (
-                  <button
-                    onClick={handleExportTelemetry}
-                    className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 text-amber-400" /> Exportar CSV
-                  </button>
-                )}
-                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs font-semibold overflow-x-auto max-w-full">
-                  <button
-                    onClick={() => setFilterModule('todos')}
-                    className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                      filterModule === 'todos' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    onClick={() => setFilterModule('auth')}
-                    className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                      filterModule === 'auth' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Segurança / Auth
-                  </button>
-                  <button
-                    onClick={() => setFilterModule('nfs-e')}
-                    className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                      filterModule === 'nfs-e' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    NFS-e
-                  </button>
-                  <button
-                    onClick={() => setFilterModule('reinf')}
-                    className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                      filterModule === 'reinf' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Reinf
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Audit Table */}
-            <div className="overflow-x-auto border border-slate-800 rounded-xl max-h-[350px]">
-              <table className="w-full text-xs text-left text-slate-300">
-                <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] border-b border-slate-800 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-3 py-2.5">Data / Hora</th>
-                    <th className="px-3 py-2.5">Usuário / Email</th>
-                    <th className="px-3 py-2.5">Empresa / CNPJ</th>
-                    <th className="px-3 py-2.5">Módulo</th>
-                    <th className="px-3 py-2.5">Ação Executada</th>
-                    <th className="px-3 py-2.5 text-right">Qtd</th>
-                    <th className="px-3 py-2.5 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
-                  {filteredLogs.map(log => (
-                    <tr key={log.id} className={`hover:bg-slate-900/50 transition ${
-                      log.status === '401 Unauthorized' ? 'bg-rose-500/5' : ''
-                    }`}>
-                      <td className="px-3 py-2.5 whitespace-nowrap text-slate-400">{log.timestamp}</td>
-                      <td className="px-3 py-2.5 font-sans font-semibold text-white">{log.userEmail}</td>
-                      <td className="px-3 py-2.5 font-sans truncate max-w-[200px]" title={log.companyName}>
-                        <span className="text-slate-200 block truncate">{log.companyName}</span>
-                        <span className="text-[10px] text-slate-500 block">{log.cnpj}</span>
-                      </td>
-                      <td className="px-3 py-2.5 font-sans">
-                        <span className={`px-2 py-0.5 rounded font-semibold text-[10px] border ${
-                          log.module.includes('Auth') || log.module.includes('Segurança')
-                            ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
-                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                        }`}>
-                          {log.module}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 font-sans">
-                        <span className={log.status === '401 Unauthorized' ? 'text-rose-400 font-bold' : 'text-slate-300'}>
-                          {log.action}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-right font-bold text-amber-400">{log.count}</td>
-                      <td className="px-3 py-2.5 text-center whitespace-nowrap">
-                        <span className={`px-2 py-0.5 rounded font-bold text-[10px] border ${
-                          log.status === '401 Unauthorized'
-                            ? 'bg-rose-500/20 text-rose-400 border-rose-500/30 animate-pulse'
-                            : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                        }`}>
-                          {log.status} ({log.latencyMs}ms)
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Health & Control Footer */}
-          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                Portal Nacional ADN: ONLINE
-              </span>
-              <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                SERPRO mTLS Gateway: ONLINE
-              </span>
-            </div>
-
-            <div className="text-[11px] text-slate-500">
-              HelpUS Accounting Telemetry Engine v2.0 • Build 2026-09
-            </div>
-          </div>
-
         </div>
-
       </div>
     </div>
   );
