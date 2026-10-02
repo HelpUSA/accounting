@@ -1767,7 +1767,7 @@ export default function AccountingPortalPage() {
         </div>
       )}
 
-      {/* Modal: Política de Privacidade */}
+      {/* Modal: Política de Privacidade & LGPD */}
       {showPrivacyModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
@@ -1783,14 +1783,45 @@ export default function AccountingPortalPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
-              <h4 className="font-bold text-white text-sm">1. Processamento Efêmero em Memória</h4>
-              <p>O seu Certificado Digital A1 (.pfx) é processado exclusivamente na memória RAM durante as chamadas mTLS aos servidores da SEFAZ e Receita Federal, com retenção zero em disco.</p>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 text-xs text-slate-300 leading-relaxed">
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                <h4 className="font-bold text-amber-400 text-sm flex items-center gap-2">
+                  🔒 Compromisso de Segurança & LGPD (Lei nº 13.709/2018)
+                </h4>
+                <p>
+                  O <strong>HelpUS Accounting</strong> segue rigorosamente as diretrizes da Lei Geral de Proteção de Dados (LGPD) e as melhores práticas de segurança da informação da ICP-Brasil.
+                </p>
+              </div>
+
+              <div className="space-y-2 border-b border-slate-800 pb-4">
+                <h4 className="font-bold text-white text-sm">1. Processamento Efêmero em Memória (Sem Armazenamento de Certificado)</h4>
+                <p>
+                  O seu <strong>Certificado Digital A1 (.pfx)</strong> e a respectiva senha são utilizados <strong>exclusivamente na memória RAM do servidor</strong> durante o momento da conexão mTLS com as APIs oficiais da SEFAZ, Receita Federal e Prefeituras. Nenhuma chave privada ou certificado é gravado em disco ou banco de dados.
+                </p>
+              </div>
+
+              <div className="space-y-2 border-b border-slate-800 pb-4">
+                <h4 className="font-bold text-white text-sm">2. Uso Discreto de Cookies e Armazenamento Local</h4>
+                <p>
+                  Utilizamos apenas <strong>cookies estritamente necessários e localStorage</strong> para armazenar preferências do usuário (como o idioma selecionado e o aceite deste termo). Não utilizamos cookies de rastreamento publicitário ou compartilhamento com terceiros.
+                </p>
+              </div>
+
+              <div className="space-y-2 border-b border-slate-800 pb-4">
+                <h4 className="font-bold text-white text-sm">3. Direitos do Titular dos Dados</h4>
+                <p>
+                  Você pode a qualquer momento limpar os dados salvos em seu próprio navegador limpando os dados de navegação ou entrando em contato com nosso DPO/Encarregado através do e-mail <a href="mailto:helpus.ecommerce@gmail.com" className="text-amber-400 underline">helpus.ecommerce@gmail.com</a>.
+                </p>
+              </div>
+
+              <div className="text-[11px] text-slate-400 bg-slate-950/60 p-3 rounded-lg border border-slate-800/80">
+                Data da última atualização: Outubro de 2026 • HelpUS Technology & Security Protocol
+              </div>
             </div>
 
             <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
-              <button onClick={() => setShowPrivacyModal(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer">
-                Fechar
+              <button onClick={() => setShowPrivacyModal(false)} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer">
+                Entendi & Concordo
               </button>
             </div>
           </div>
@@ -1799,17 +1830,27 @@ export default function AccountingPortalPage() {
 
       {/* Cookie Consent Banner */}
       {!cookieConsent && (
-        <div className="fixed bottom-16 left-4 right-4 sm:right-auto sm:left-6 sm:max-w-md z-50 bg-slate-900 border border-slate-700 shadow-2xl p-4 rounded-2xl flex flex-col gap-3">
+        <div className="fixed bottom-14 left-4 right-4 sm:right-auto sm:left-6 sm:max-w-md z-50 bg-slate-900/95 backdrop-blur border border-slate-700 shadow-2xl p-4 rounded-2xl flex flex-col gap-3 animate-fade-in">
           <div className="flex items-start gap-3">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div className="space-y-1">
-              <h4 className="font-bold text-white text-xs">{t.cookieBannerTitle}</h4>
-              <p className="text-[11px] text-slate-400 leading-relaxed">{t.cookieBannerText}</p>
+              <h4 className="font-bold text-white text-xs flex items-center gap-1.5">
+                <span>🍪 Aviso Discreto de Cookies & LGPD</span>
+              </h4>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Utilizamos apenas cookies essenciais para garantir o funcionamento seguro da sua sessão e lembrar suas preferências.
+              </p>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-800">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              className="text-amber-400 hover:underline transition font-medium"
+            >
+              Ler Política de Privacidade
+            </button>
             <button onClick={handleAcceptCookies} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer">
               {t.cookieAcceptBtn}
             </button>
@@ -1838,6 +1879,21 @@ export default function AccountingPortalPage() {
             <span className="font-semibold text-slate-300">{t.footerPortalName}</span>
             <span>•</span>
             <span>© 2026 {t.footerRights}</span>
+            <span>•</span>
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              className="hover:text-amber-400 text-slate-400 underline transition cursor-pointer flex items-center gap-1"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Política de Privacidade & LGPD</span>
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => setCookieConsent(false)}
+              className="hover:text-amber-400 text-slate-400 underline transition cursor-pointer"
+            >
+              <span>Cookies</span>
+            </button>
           </div>
 
           <a href="https://helpusbr.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-3.5 py-1 rounded-full transition group shrink-0">
