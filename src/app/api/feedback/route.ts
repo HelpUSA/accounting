@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
     if (!name || !email || !message) {
       return NextResponse.json(
-        { success: false, error: 'Campos obrigatórios ausentes' },
+        { success: false, error: 'Campos obrigatórios ausentes (Nome, E-mail e Mensagem)' },
         { status: 400 }
       );
     }
@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     let emailSent = false;
     let mailError = null;
 
+    // Method 1: Nodemailer via SMTP if credentials are defined
     if (smtpPass) {
       try {
         const transporter = nodemailer.createTransport({
@@ -71,12 +72,50 @@ export async function POST(request: NextRequest) {
 
         emailSent = true;
       } catch (err: any) {
-        console.error('[HelpUS Feedback Error] Falha ao enviar e-mail via SMTP:', err.message);
+        console.error('[HelpUS Feedback SMTP Error]:', err.message);
         mailError = err.message;
       }
     }
 
-    console.log(`[HelpUS Accounting - Feedback Recebido] Para: ${recipient} | De: ${name} (${email}) | Assunto: ${subject} | EmailEnviado: ${emailSent}`);
+    // Method 2: Direct HTTP Mail Service Dispatch to helpus.ecommerce@gmail.com
+    if (!emailSent) {
+      try {
+        const fsRes = await fetch('https://formsubmit.co/ajax/helpus.ecommerce@gmail.com', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) HelpUS-Accounting/1.0',
+            'Referer': 'https://accounting.helpusbr.com/'
+          },
+          body: JSON.stringify({
+            name: `${name} (${email})`,
+            email: email,
+            _subject: `[HelpUS Accounting - Sugestão] ${subject || 'Feedback'}`,
+            _replyto: email,
+            _captcha: 'false',
+            _template: 'table',
+            Assunto: subject || 'Sugestão de Melhoria',
+            Remetente: `${name} <${email}>`,
+            Mensagem: message,
+            DataHora: timestamp
+          })
+        });
+
+        const fsData = await fsRes.json();
+        if (fsRes.ok && (fsData.success === 'true' || fsData.success === true)) {
+          emailSent = true;
+        } else {
+          mailError = fsData.message || 'Aguardando ativação inicial do FormSubmit ou envio SMTP.';
+          console.warn('[HelpUS Feedback FormSubmit Notice]:', fsData.message);
+        }
+      } catch (err: any) {
+        console.error('[FormSubmit Dispatch Error]:', err.message);
+        mailError = err.message;
+      }
+    }
+
+    console.log(`[HelpUS Accounting - Feedback Recebido] Para: ${recipient} | De: ${name} (${email}) | Sent: ${emailSent}`);
 
     return NextResponse.json({
       success: true,
