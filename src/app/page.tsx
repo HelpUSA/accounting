@@ -131,12 +131,14 @@ export default function AccountingPortalPage() {
   const [showPrivacyModal, setShowPrivacyModal] = useState<boolean>(false);
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
 
-  // Cookie banner state
-  const [cookieConsent, setCookieConsent] = useState<boolean>(true);
+  // Cookie banner state (exibido automaticamente ao abrir o site)
+  const [cookieConsent, setCookieConsent] = useState<boolean>(false);
 
   useEffect(() => {
     const consent = localStorage.getItem('helpus_cookie_consent');
-    if (!consent) {
+    if (consent === 'true') {
+      setCookieConsent(true);
+    } else {
       setCookieConsent(false);
     }
   }, []);
@@ -1717,50 +1719,50 @@ export default function AccountingPortalPage() {
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 text-xs text-slate-300 leading-relaxed">
               <div className="space-y-2 border-b border-slate-800 pb-4">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
-                  📋 Módulo 1: NFS-e (Notas Fiscais de Serviço)
+                  {t.manualMod1Title}
                 </h4>
-                <p>Insira seu Certificado A1 (.pfx) e senha para consultar e baixar em lote Notas de Serviço Prestadas e Tomadas do Portal Nacional e Prefeituras.</p>
+                <p>{t.manualMod1Desc}</p>
               </div>
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
-                  📦 Módulo 2: NF-e de Produto (SEFAZ Mercadorias)
+                  {t.manualMod2Title}
                 </h4>
-                <p>Conecte seu Certificado A1 para buscar notas de produtos/compras emitidas contra o CNPJ da empresa, realizar Manifestação do Destinatário e baixar DANFEs.</p>
+                <p>{t.manualMod2Desc}</p>
               </div>
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
-                  🚚 Módulo 3: CT-e (Conhecimento de Transporte)
+                  {t.manualMod3Title}
                 </h4>
-                <p>Liste todos os conhecimentos de frete da empresa para controlar custos logísticos e gerar DACTEs em PDF/HTML.</p>
+                <p>{t.manualMod3Desc}</p>
               </div>
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
-                  📑 Módulo 4: EFD-Reinf (Gerador R-4010 / R-4020)
+                  {t.manualMod4Title}
                 </h4>
-                <p>Processa as retenções na fonte (IRRF, PIS, COFINS, CSLL, INSS) e gera os lotes em XML oficiais para transmissão à Receita Federal.</p>
+                <p>{t.manualMod4Desc}</p>
               </div>
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
-                  📊 Módulo 5: SPED Fiscal (EFD ICMS IPI .txt)
+                  {t.manualMod5Title}
                 </h4>
-                <p>Converte as notas do mês no arquivo texto .txt normatizado do SPED Fiscal pronto para o PVA da Receita Federal.</p>
+                <p>{t.manualMod5Desc}</p>
               </div>
 
               <div className="space-y-2">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2 text-amber-400">
-                  🏦 Módulo 6: Conciliação Bancária (OFX / CSV)
+                  {t.manualMod6Title}
                 </h4>
-                <p>Arraste o extrato bancário de qualquer banco (.OFX ou .CSV) para cruzar os lançamentos com as notas fiscais e gerar relatório de fluxo de caixa.</p>
+                <p>{t.manualMod6Desc}</p>
               </div>
             </div>
 
             <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
               <button onClick={() => setShowManualModal(false)} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer">
-                Entendi
+                {t.btnUnderstand}
               </button>
             </div>
           </div>
@@ -1786,86 +1788,66 @@ export default function AccountingPortalPage() {
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 text-xs text-slate-300 leading-relaxed">
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                 <h4 className="font-bold text-amber-400 text-sm flex items-center gap-2">
-                  🔒 Compromisso de Segurança & LGPD (Lei nº 13.709/2018)
+                  {t.privacyCommitmentTitle}
                 </h4>
-                <p>
-                  O <strong>HelpUS Accounting</strong> segue rigorosamente as diretrizes da Lei Geral de Proteção de Dados (LGPD) e as melhores práticas de segurança da informação da ICP-Brasil.
-                </p>
+                <p>{t.privacyCommitmentDesc}</p>
               </div>
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
-                <h4 className="font-bold text-white text-sm">1. Processamento Efêmero em Memória (Sem Armazenamento de Certificado)</h4>
-                <p>
-                  O seu <strong>Certificado Digital A1 (.pfx)</strong> e a respectiva senha são utilizados <strong>exclusivamente na memória RAM do servidor</strong> durante o momento da conexão mTLS com as APIs oficiais da SEFAZ, Receita Federal e Prefeituras. Nenhuma chave privada ou certificado é gravado em disco ou banco de dados.
-                </p>
+                <h4 className="font-bold text-white text-sm">{t.privacyRule1Title}</h4>
+                <p>{t.privacyRule1Desc}</p>
               </div>
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
-                <h4 className="font-bold text-white text-sm">2. Uso Discreto de Cookies e Armazenamento Local</h4>
-                <p>
-                  Utilizamos apenas <strong>cookies estritamente necessários e localStorage</strong> para armazenar preferências do usuário (como o idioma selecionado e o aceite deste termo). Não utilizamos cookies de rastreamento publicitário ou compartilhamento com terceiros.
-                </p>
+                <h4 className="font-bold text-white text-sm">{t.privacyRule2Title}</h4>
+                <p>{t.privacyRule2Desc}</p>
               </div>
 
               <div className="space-y-2 border-b border-slate-800 pb-4">
-                <h4 className="font-bold text-white text-sm">3. Direitos do Titular dos Dados</h4>
-                <p>
-                  Você pode a qualquer momento limpar os dados salvos em seu próprio navegador limpando os dados de navegação ou entrando em contato com nosso DPO/Encarregado através do e-mail <a href="mailto:helpus.ecommerce@gmail.com" className="text-amber-400 underline">helpus.ecommerce@gmail.com</a>.
-                </p>
+                <h4 className="font-bold text-white text-sm">{t.privacyRule3Title}</h4>
+                <p>{t.privacyRule3Desc}</p>
               </div>
 
               <div className="text-[11px] text-slate-400 bg-slate-950/60 p-3 rounded-lg border border-slate-800/80">
-                Data da última atualização: Outubro de 2026 • HelpUS Technology & Security Protocol
+                HelpUS Security Protocol • 2026
               </div>
             </div>
 
             <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
               <button onClick={() => setShowPrivacyModal(false)} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer">
-                Entendi & Concordo
+                {t.btnUnderstand}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Cookie Consent Pop-up Modal */}
+      {/* Cookie Consent Discrete Banner (Exibido Automaticamente ao Abrir o Site no Primeiro Acesso) */}
       {!cookieConsent && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto shadow-inner">
-              <ShieldCheck className="w-6 h-6 text-amber-400" />
+        <div className="fixed bottom-14 left-4 right-4 sm:right-auto sm:left-6 sm:max-w-md z-50 bg-slate-900/95 backdrop-blur border border-slate-700 shadow-2xl p-4 rounded-2xl flex flex-col gap-3 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+              <ShieldAlert className="w-5 h-5" />
             </div>
-
-            <div className="space-y-2">
-              <h3 className="font-bold text-white text-base sm:text-lg flex items-center justify-center gap-2">
-                <span>🍪 Aviso de Cookies & LGPD</span>
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Para oferecer uma navegação rápida e segura, utilizamos apenas <strong>cookies essenciais e armazenamento local estritamente necessários</strong> para o funcionamento do sistema e salvamento das suas preferências.
+            <div className="space-y-1">
+              <h4 className="font-bold text-white text-xs flex items-center gap-1.5">
+                <span>{t.cookieBannerTitle}</span>
+              </h4>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                {t.cookieBannerText}
               </p>
             </div>
-
-            <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 leading-normal">
-              🔒 Nenhum dado do seu Certificado Digital A1 é armazenado. Retenção zero em banco de dados.
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                onClick={handleAcceptCookies}
-                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 px-6 rounded-xl text-xs transition cursor-pointer shadow-lg shadow-amber-500/20"
-              >
-                {t.cookieAcceptBtn}
-              </button>
-            </div>
-            
-            <div>
-              <button
-                onClick={() => setShowPrivacyModal(true)}
-                className="text-[11px] text-amber-400 hover:underline transition"
-              >
-                Conhecer Política de Privacidade & Proteção de Dados
-              </button>
-            </div>
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              className="text-amber-400 hover:underline transition font-medium"
+            >
+              {t.privacyPolicyLink}
+            </button>
+            <button onClick={handleAcceptCookies} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer">
+              {t.cookieAcceptBtn}
+            </button>
           </div>
         </div>
       )}
@@ -1897,14 +1879,7 @@ export default function AccountingPortalPage() {
               className="hover:text-amber-400 text-slate-400 underline transition cursor-pointer flex items-center gap-1"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Política de Privacidade & LGPD</span>
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => setCookieConsent(false)}
-              className="hover:text-amber-400 text-slate-400 underline transition cursor-pointer"
-            >
-              <span>Cookies</span>
+              <span>{t.privacyPolicyLink}</span>
             </button>
           </div>
 

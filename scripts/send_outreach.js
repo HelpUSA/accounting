@@ -11,26 +11,30 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Lista Expandida e Atualizada de Escritórios de Contabilidade e Contadores no Brasil
+// Lista Expandida com Foco nos Escritórios de Contabilidade da Paraíba (PB) e Brasil
 const targetEmails = [
-  { name: 'Equipe HelpUS', email: 'helpus.ecommerce@gmail.com', office: 'HelpUS Accounting' },
-  { name: 'Atendimento Contábil', email: 'contato@contabilidade.com.br', office: 'Contabilidade Brasil' },
-  { name: 'Contato Fiscal', email: 'atendimento@contabil.com.br', office: 'Escritório Contábil' },
-  { name: 'Setor Fiscal', email: 'fiscal@contabilidadeonline.com.br', office: 'Contabilidade Online' },
+  { name: 'Equipe HelpUS', email: 'helpus.ecommerce@gmail.com', office: 'HelpUS Accounting (Teste)' },
+  
+  // Paraíba (PB) - Escritórios Mapeados
+  { name: 'Informação Contabilidade', email: 'contato@informacaocontabilidade.com.br', office: 'Informação Contabilidade (João Pessoa/PB)' },
+  { name: 'Juvare Contabilidade', email: 'atendimento@juvarecontabilidade.com.br', office: 'Juvare Contabilidade (João Pessoa/PB)' },
+  { name: 'Almeida Contabilidade', email: 'contato@almeidacontabilidadepb.com.br', office: 'Almeida Contabilidade (Campina Grande/PB)' },
+  { name: 'Contabiliza Contabilidade', email: 'contato@contabilizacg.com.br', office: 'Contabiliza Contabilidade (Campina Grande/PB)' },
+  { name: 'Contafacio Contabilidade', email: 'contafacio@contafacio.com.br', office: 'Contafacio Contabilidade (Campina Grande/PB)' },
+  { name: 'Ação Contabilidade', email: 'contato@acaocontabilidade.com.br', office: 'Ação Contabilidade (Campina Grande/PB)' },
+  { name: 'Sotero Contabilidade', email: 'contato@soterocontabilidade.com.br', office: 'Sotero Contabilidade (Patos/PB)' },
+  { name: 'Pinharas Contabilidade', email: 'contato@pinharascontabilidade.com.br', office: 'Pinharas Contabilidade (Patos/PB)' },
+  { name: 'Premier Contabilidade', email: 'contato@premiercontadores.com.br', office: 'Premier Contabilidade (Sousa/PB)' },
+  { name: 'Contágil Contabilidade', email: 'contato@contagilpb.com.br', office: 'Contágil Contabilidade (Paraíba/PB)' },
+  
+  // Principais Escritórios Nacionais
   { name: 'Comercial Contábil', email: 'contato@confirp.com.br', office: 'Confirp Consultoria Contábil' },
   { name: 'Atendimento Contábil', email: 'contato@octacontabilidade.com.br', office: 'Octa Contabilidade' },
   { name: 'Contato Comercial', email: 'contato@agilize.com.br', office: 'Agilize Contabilidade' },
-  { name: 'Contato Contabilidade', email: 'contato@senhorcontabil.com.br', office: 'Senhor Contábil' },
-  { name: 'Atendimento Fiscal', email: 'falecom@conube.com.br', office: 'Conube Contabilidade Online' },
-  { name: 'Atendimento MEI/Contábil', email: 'contato@meumeicontabilidade.com.br', office: 'Meu MEI Contabilidade' },
-  { name: 'Contato Contábil', email: 'contato@contabilizei.com.br', office: 'Contabilizei' },
-  { name: 'Atendimento Fiscal', email: 'contato@osayk.com.br', office: 'Osayk Contabilidade' },
-  { name: 'Equipe de Atendimento', email: 'contato@webcontabil.com.br', office: 'Web Contábil' },
-  { name: 'Contato Gestão Fiscal', email: 'contato@facilite.co', office: 'Facilite Contabilidade' },
-  { name: 'Atendimento Contábil', email: 'contato@contabilnet.com.br', office: 'ContabilNet' }
+  { name: 'Contato Contabilidade', email: 'contato@senhorcontabil.com.br', office: 'Senhor Contábil' }
 ];
 
-const subject = '[Contabilidade] Chega de baixar NFS-e uma a uma: Conheça a ferramenta 100% Gratuita!';
+const subject = '[Contabilidade PB] Chega de baixar NFS-e uma a uma: Conheça a ferramenta 100% Gratuita!';
 
 const getHtmlContent = (recipientName) => `
 <!DOCTYPE html>
@@ -52,7 +56,7 @@ const getHtmlContent = (recipientName) => `
           <!-- Cabeçalho / Banner Topo -->
           <tr>
             <td style="background: linear-gradient(135deg, #020617 0%, #0f172a 100%); padding: 28px 24px; text-align: center; border-bottom: 2px solid #fbbf24;">
-              <span style="background-color: #fbbf24; color: #020617; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;">NOVIDADE 100% GRATUITA</span>
+              <span style="background-color: #fbbf24; color: #020617; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;">NOVIDADE 100% GRATUITA PARA CONTADORES</span>
               <h1 style="color: #ffffff; font-size: 24px; margin: 16px 0 6px 0; font-weight: 800;">HELPUS <span style="color: #fbbf24;">ACCOUNTING</span></h1>
               <p style="color: #94a3b8; font-size: 14px; margin: 0;">A solução definitiva para busca e download de NFS-e no Brasil</p>
             </td>
@@ -134,7 +138,7 @@ const getHtmlContent = (recipientName) => `
             <td style="background-color: #020617; padding: 20px; text-align: center; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b;">
               <p style="margin: 0 0 6px 0;">HelpUS Accounting • Soluções Inteligentes para Contabilidade</p>
               <p style="margin: 0 0 10px 0;">E-mail oficial: <a href="mailto:helpus.ecommerce@gmail.com" style="color: #94a3b8; text-decoration: underline;">helpus.ecommerce@gmail.com</a> | Site: <a href="https://helpusbr.com" style="color: #38bdf8; text-decoration: underline;">helpusbr.com</a></p>
-              <p style="margin: 0; font-size: 11px; color: #475569;">Você recebeu esta mensagem institucional como profissional ou escritório contábil. Caso não queira receber nossas atualizações, responda com "Descadastrar".</p>
+              <p style="margin: 0; font-size: 11px; color: #475569;">Você recebeu esta mensagem institucional como profissional ou escritório contábil. Caso não queira receber nossas atualizaciones, responda com "Descadastrar".</p>
             </td>
           </tr>
 
@@ -149,7 +153,7 @@ const getHtmlContent = (recipientName) => `
 `;
 
 async function sendOutreachCampaign() {
-  console.log(`🚀 Iniciando Campanha de Divulgação HelpUS Accounting (Domínio Oficial: helpusbr.com)...`);
+  console.log(`🚀 Iniciando Campanha de Divulgação HelpUS Accounting - Lote Paraíba (PB)...`);
   console.log(`📬 Total de destinatários na lista: ${targetEmails.length}`);
   
   let successCount = 0;
@@ -183,7 +187,7 @@ async function sendOutreachCampaign() {
   }
 
   console.log(`\n==============================================`);
-  console.log(`🎉 Campanha concluída com o domínio corrigido (helpusbr.com)!`);
+  console.log(`🎉 Campanha da Paraíba (PB) concluída com sucesso!`);
   console.log(`  - Enviados com Sucesso: ${successCount}`);
   console.log(`  - Erros: ${errorCount}`);
   console.log(`==============================================\n`);
