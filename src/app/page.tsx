@@ -1828,32 +1828,44 @@ export default function AccountingPortalPage() {
         </div>
       )}
 
-      {/* Cookie Consent Banner */}
+      {/* Cookie Consent Pop-up Modal */}
       {!cookieConsent && (
-        <div className="fixed bottom-14 left-4 right-4 sm:right-auto sm:left-6 sm:max-w-md z-50 bg-slate-900/95 backdrop-blur border border-slate-700 shadow-2xl p-4 rounded-2xl flex flex-col gap-3 animate-fade-in">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-              <ShieldAlert className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto shadow-inner">
+              <ShieldCheck className="w-6 h-6 text-amber-400" />
             </div>
-            <div className="space-y-1">
-              <h4 className="font-bold text-white text-xs flex items-center gap-1.5">
-                <span>🍪 Aviso Discreto de Cookies & LGPD</span>
-              </h4>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                Utilizamos apenas cookies essenciais para garantir o funcionamento seguro da sua sessão e lembrar suas preferências.
+
+            <div className="space-y-2">
+              <h3 className="font-bold text-white text-base sm:text-lg flex items-center justify-center gap-2">
+                <span>🍪 Aviso de Cookies & LGPD</span>
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Para oferecer uma navegação rápida e segura, utilizamos apenas <strong>cookies essenciais e armazenamento local estritamente necessários</strong> para o funcionamento do sistema e salvamento das suas preferências.
               </p>
             </div>
-          </div>
-          <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
-            <button
-              onClick={() => setShowPrivacyModal(true)}
-              className="text-amber-400 hover:underline transition font-medium"
-            >
-              Ler Política de Privacidade
-            </button>
-            <button onClick={handleAcceptCookies} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer">
-              {t.cookieAcceptBtn}
-            </button>
+
+            <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 leading-normal">
+              🔒 Nenhum dado do seu Certificado Digital A1 é armazenado. Retenção zero em banco de dados.
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={handleAcceptCookies}
+                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 px-6 rounded-xl text-xs transition cursor-pointer shadow-lg shadow-amber-500/20"
+              >
+                {t.cookieAcceptBtn}
+              </button>
+            </div>
+            
+            <div>
+              <button
+                onClick={() => setShowPrivacyModal(true)}
+                className="text-[11px] text-amber-400 hover:underline transition"
+              >
+                Conhecer Política de Privacidade & Proteção de Dados
+              </button>
+            </div>
           </div>
         </div>
       )}
