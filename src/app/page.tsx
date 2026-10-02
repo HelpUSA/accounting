@@ -1576,7 +1576,7 @@ export default function AccountingPortalPage() {
           </div>
         )}
 
-        {/* Seção Fale Conosco & Sugestões de Melhoria (Ticket ACC-103) */}
+        {/* Seção Fale Conosco & Sugestões de Melhoria (Multi-Language) */}
         <div className="mt-12 bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
             <div className="space-y-1">
@@ -1584,31 +1584,31 @@ export default function AccountingPortalPage() {
                 <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
                   <MessageCircle className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-black text-white uppercase tracking-tight">FALE CONOSCO & SUGESTÕES DE MELHORIAS</h3>
+                <h3 className="text-lg font-black text-white uppercase tracking-tight">{t.feedbackTitle}</h3>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Envie suas ideias, dúvidas ou sugestões para aprimorarmos o <strong>HelpUS Accounting</strong>. Sua mensagem é enviada diretamente para <strong>helpus.ecommerce@gmail.com</strong>.
+                {t.feedbackSub}
               </p>
             </div>
             <span className="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-xs font-bold shrink-0 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> Canal Direto de Feedback
+              <Sparkles className="w-3.5 h-3.5" /> Feedback & Support
             </span>
           </div>
 
           {feedbackSuccess && (
             <div className="p-4 bg-emerald-950/80 border border-emerald-500/40 rounded-2xl text-emerald-300 text-xs font-bold flex items-center gap-3 animate-in fade-in">
               <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-              <span>Sua sugestão foi enviada com sucesso para <strong>helpus.ecommerce@gmail.com</strong>! Muito obrigado por colaborar com o aprimoramento do sistema.</span>
+              <span>{t.feedbackSuccessMsg}</span>
             </div>
           )}
 
           <form onSubmit={handleSendFeedback} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Seu Nome / Empresa</label>
+              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">{t.feedbackNameLabel}</label>
               <input
                 type="text"
                 required
-                placeholder="Ex: Tércio (Public Arte / Contabilidade)"
+                placeholder={t.feedbackNamePlaceholder}
                 value={feedbackName}
                 onChange={(e) => setFeedbackName(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 font-bold"
@@ -1616,11 +1616,11 @@ export default function AccountingPortalPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Seu E-mail de Contato</label>
+              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">{t.feedbackEmailLabel}</label>
               <input
                 type="email"
                 required
-                placeholder="seu.email@exemplo.com.br"
+                placeholder={t.feedbackEmailPlaceholder}
                 value={feedbackEmail}
                 onChange={(e) => setFeedbackEmail(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 font-bold"
@@ -1628,25 +1628,25 @@ export default function AccountingPortalPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Tipo de Sugestão / Assunto</label>
+              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">{t.feedbackSubjectLabel}</label>
               <select
                 value={feedbackSubject}
                 onChange={(e) => setFeedbackSubject(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-amber-400 font-bold focus:outline-none focus:border-amber-500"
               >
-                <option value="Melhoria de Interface" className="bg-slate-900 text-slate-200">✨ Melhoria de Interface & Visual</option>
-                <option value="Nova Funcionalidade" className="bg-slate-900 text-slate-200">🚀 Nova Funcionalidade / Recurso</option>
-                <option value="Integração Fiscal SEFAZ" className="bg-slate-900 text-slate-200">📑 Integração Fiscal / SPED / Reinf</option>
-                <option value="Dúvida / Suporte" className="bg-slate-900 text-slate-200">❓ Dúvida ou Suporte Técnico</option>
+                <option value="Melhoria de Interface" className="bg-slate-900 text-slate-200">{t.feedbackOptInterface}</option>
+                <option value="Nova Funcionalidade" className="bg-slate-900 text-slate-200">{t.feedbackOptFeature}</option>
+                <option value="Integração Fiscal SEFAZ" className="bg-slate-900 text-slate-200">{t.feedbackOptFiscal}</option>
+                <option value="Dúvida / Suporte" className="bg-slate-900 text-slate-200">{t.feedbackOptSupport}</option>
               </select>
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Sua Mensagem / Sugestão de Melhoria</label>
+              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">{t.feedbackMsgLabel}</label>
               <textarea
                 required
                 rows={4}
-                placeholder="Descreva detalhadamente sua sugestão de melhoria para a aplicação HelpUS Accounting..."
+                placeholder={t.feedbackMsgPlaceholder}
                 value={feedbackMessage}
                 onChange={(e) => setFeedbackMessage(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 font-medium"
@@ -1660,7 +1660,7 @@ export default function AccountingPortalPage() {
                 className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {sendingFeedback ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                <span>{sendingFeedback ? 'Enviando Mensagem...' : 'Enviar Sugestão'}</span>
+                <span>{sendingFeedback ? t.feedbackSendingBtn : t.feedbackSendBtn}</span>
               </button>
             </div>
           </form>

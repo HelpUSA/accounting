@@ -116,6 +116,24 @@ export interface Translations {
   privacyRule2Desc: string;
   privacyRule3Title: string;
   privacyRule3Desc: string;
+
+  // Fale Conosco / Contact Us Form
+  feedbackTitle: string;
+  feedbackSub: string;
+  feedbackNameLabel: string;
+  feedbackNamePlaceholder: string;
+  feedbackEmailLabel: string;
+  feedbackEmailPlaceholder: string;
+  feedbackSubjectLabel: string;
+  feedbackOptInterface: string;
+  feedbackOptFeature: string;
+  feedbackOptFiscal: string;
+  feedbackOptSupport: string;
+  feedbackMsgLabel: string;
+  feedbackMsgPlaceholder: string;
+  feedbackSendBtn: string;
+  feedbackSendingBtn: string;
+  feedbackSuccessMsg: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -234,7 +252,25 @@ export const translations: Record<Language, Translations> = {
     privacyRule2Title: '2. Uso Discreto de Cookies e Armazenamento Local',
     privacyRule2Desc: 'Utilizamos apenas cookies estritamente necessários e localStorage para armazenar preferências do usuário (como o idioma selecionado e o aceite deste termo). Não utilizamos cookies de rastreamento publicitário ou compartilhamento com terceiros.',
     privacyRule3Title: '3. Direitos do Titular dos Dados',
-    privacyRule3Desc: 'Você pode a qualquer momento limpar os dados salvos em seu próprio navegador limpando os dados de navegação ou entrando em contato com nosso DPO/Encarregado através do e-mail helpus.ecommerce@gmail.com.'
+    privacyRule3Desc: 'Você pode a qualquer momento limpar os dados salvos em seu próprio navegador limpando os dados de navegação ou entrando em contato com nosso DPO/Encarregado através do e-mail helpus.ecommerce@gmail.com.',
+
+    // Fale Conosco Form
+    feedbackTitle: 'Fale Conosco / Sugestões & Suporte Técnico',
+    feedbackSub: 'Envie sua sugestão de melhoria ou reporte de experiência para nossa equipe técnica',
+    feedbackNameLabel: 'Seu Nome / Empresa',
+    feedbackNamePlaceholder: 'Ex: Tércio (Public Arte / Contabilidade)',
+    feedbackEmailLabel: 'Seu E-mail de Contato',
+    feedbackEmailPlaceholder: 'seu.email@exemplo.com.br',
+    feedbackSubjectLabel: 'Tipo de Sugestão / Assunto',
+    feedbackOptInterface: '✨ Melhoria de Interface & Visual',
+    feedbackOptFeature: '🚀 Nova Funcionalidade / Recurso',
+    feedbackOptFiscal: '📑 Integração Fiscal / SPED / Reinf',
+    feedbackOptSupport: '❓ Dúvida ou Suporte Técnico',
+    feedbackMsgLabel: 'Sua Mensagem / Sugestão de Melhoria',
+    feedbackMsgPlaceholder: 'Descreva detalhadamente sua sugestão de melhoria para a aplicação HelpUS Accounting...',
+    feedbackSendBtn: 'Enviar Sugestão',
+    feedbackSendingBtn: 'Enviando Mensagem...',
+    feedbackSuccessMsg: 'Sua sugestão foi enviada com sucesso para helpus.ecommerce@gmail.com! Muito obrigado por colaborar com o aprimoramento do sistema.'
   },
   en: {
     portalTitle: 'HelpUS Accounting',
@@ -351,7 +387,25 @@ export const translations: Record<Language, Translations> = {
     privacyRule2Title: '2. Essential Cookies & Local Storage Only',
     privacyRule2Desc: 'We only use strictly necessary cookies and localStorage to store user preferences (language and terms consent). We do not use advertising or tracking cookies.',
     privacyRule3Title: '3. Data Subject Rights',
-    privacyRule3Desc: 'You can clear your saved browser data at any time or contact our Data Protection Officer via email at helpus.ecommerce@gmail.com.'
+    privacyRule3Desc: 'You can clear your saved browser data at any time or contact our Data Protection Officer via email at helpus.ecommerce@gmail.com.',
+
+    // Fale Conosco Form
+    feedbackTitle: 'Contact Us / Suggestions & Technical Support',
+    feedbackSub: 'Send your improvement suggestion or feedback to our engineering team',
+    feedbackNameLabel: 'Your Name / Company',
+    feedbackNamePlaceholder: 'Ex: John Doe (Accounting Firm / Business)',
+    feedbackEmailLabel: 'Your Contact Email',
+    feedbackEmailPlaceholder: 'your.email@example.com',
+    feedbackSubjectLabel: 'Suggestion Category / Subject',
+    feedbackOptInterface: '✨ UI & Visual Improvement',
+    feedbackOptFeature: '🚀 New Feature / Functionality',
+    feedbackOptFiscal: '📑 Tax Integration / SPED / Reinf',
+    feedbackOptSupport: '❓ Question or Tech Support',
+    feedbackMsgLabel: 'Your Message / Improvement Suggestion',
+    feedbackMsgPlaceholder: 'Describe your improvement suggestion for the HelpUS Accounting application in detail...',
+    feedbackSendBtn: 'Send Suggestion',
+    feedbackSendingBtn: 'Sending Message...',
+    feedbackSuccessMsg: 'Your suggestion has been sent successfully to helpus.ecommerce@gmail.com! Thank you very much for helping us improve.'
   },
   es: {
     portalTitle: 'HelpUS Accounting',
@@ -408,7 +462,7 @@ export const translations: Record<Language, Translations> = {
     cookieBannerTitle: 'Aviso de Cookies y Privacidad',
     cookieBannerText: 'Utilizamos únicamente cookies esenciales y almacenamiento local estrictamente necesarios para el funcionamiento seguro de la sesión.',
     cookieAcceptBtn: 'Aceptar y Continuar',
-    manualModalTitle: 'Manual Detallado de la Suite Contable (6 Módulos)',
+    manualModalTitle: 'Manual Detalhado de la Suite Contable (6 Módulos)',
     privacyModalTitle: 'Política de Privacidad y Protección de Datos',
 
     startDate: 'Fecha Inicial',
@@ -432,7 +486,7 @@ export const translations: Record<Language, Translations> = {
     bannerNfseDesc: '💡 Cómo usar: Cargue su Certificado A1 (.pfx) para consultar y descargar en lote Facturas de Servicio del Portal Nacional (ADN) y Municipios.',
     
     bannerNfeTitle: 'Módulo 2: NF-e de Producto (SEFAZ Mercancías)',
-    bannerNfeDesc: '💡 Cómo usar: Conecte su Certificado A1 para obtener automáticamente facturas de compras de proveedores, Manifestación del Destinatário y DANFEs.',
+    bannerNfeDesc: '💡 Cómo usar: Conecte su Certificado A1 para obtener automáticamente facturas de compras de proveedores, Manifestación del Destinatario y DANFEs.',
 
     bannerCteTitle: 'Módulo 3: CT-e (Conocimiento de Transporte Electrónico)',
     bannerCteDesc: '💡 Cómo usar: Autentique su Certificado A1 para listar fletes, monitorear costos logísticos y generar DACTEs gráficos.',
@@ -468,6 +522,24 @@ export const translations: Record<Language, Translations> = {
     privacyRule2Title: '2. Uso de Cookies Esenciales y Almacenamiento Local',
     privacyRule2Desc: 'Utilizamos únicamente cookies estrictamente necesarias y localStorage para guardar sus preferencias (idioma y aceptación de términos). No utilizamos cookies publicitarias ni de seguimiento de terceros.',
     privacyRule3Title: '3. Derechos del Titular de los Datos',
-    privacyRule3Desc: 'Puede borrar los datos guardados en su navegador en cualquier momento o contactar a nuestro Delegado de Protección de Datos en helpus.ecommerce@gmail.com.'
+    privacyRule3Desc: 'Puede borrar los datos guardados en su navegador en cualquier momento o contactar a nuestro Delegado de Protección de Datos en helpus.ecommerce@gmail.com.',
+
+    // Fale Conosco Form
+    feedbackTitle: 'Contáctenos / Sugerencias y Soporte Técnico',
+    feedbackSub: 'Envíe su sugerencia de mejora o comentarios a nuestro equipo técnico',
+    feedbackNameLabel: 'Su Nombre / Empresa',
+    feedbackNamePlaceholder: 'Ej: Juan Pérez (Despacho Contable / Empresa)',
+    feedbackEmailLabel: 'Su Correo Electrónico de Contacto',
+    feedbackEmailPlaceholder: 'su.correo@ejemplo.com',
+    feedbackSubjectLabel: 'Tipo de Sugerencia / Asunto',
+    feedbackOptInterface: '✨ Mejora de Interfaz y Visual',
+    feedbackOptFeature: '🚀 Nueva Funcionalidade / Recurso',
+    feedbackOptFiscal: '📑 Integración Fiscal / SPED / Reinf',
+    feedbackOptSupport: '❓ Duda o Soporte Técnico',
+    feedbackMsgLabel: 'Su Mensaje / Sugerencia de Mejora',
+    feedbackMsgPlaceholder: 'Describa en detalle su sugerencia de mejora para la aplicación HelpUS Accounting...',
+    feedbackSendBtn: 'Enviar Sugerencia',
+    feedbackSendingBtn: 'Enviando Mensaje...',
+    feedbackSuccessMsg: '¡Su sugerencia fue enviada con éxito a helpus.ecommerce@gmail.com! Muchas gracias por colaborar.'
   }
 };
