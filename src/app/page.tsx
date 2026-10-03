@@ -980,76 +980,74 @@ export default function AccountingPortalPage() {
               </p>
             </section>
 
-            {certInfo ? (
-              <>
-                {/* KPI Cards Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                        {t.kpiTotalNotes}
-                      </span>
-                      <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
-                        <FileCheck2 className="w-4 h-4" />
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <span className="text-2xl font-black text-white">{sortedNfseItems.length}</span>
-                      <span className="text-xs text-slate-400 ml-1.5">{t.kpiNotesLabel}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                        {t.kpiIssuedVal}
-                      </span>
-                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-                        <ArrowUpRight className="w-4 h-4" />
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <span className="text-xl font-black text-emerald-400">
-                        {formatCurrency(totalValPrestado)}
-                      </span>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssuedSub}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
-                        {t.kpiReceivedVal}
-                      </span>
-                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
-                        <ArrowDownLeft className="w-4 h-4" />
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <span className="text-xl font-black text-amber-400">
-                        {formatCurrency(totalValTomado)}
-                      </span>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiReceivedSub}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
-                        {t.kpiTotalIss}
-                      </span>
-                      <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
-                        <Building2 className="w-4 h-4" />
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <span className="text-xl font-black text-indigo-400">
-                        {formatCurrency(totalIss)}
-                      </span>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssSub}</p>
-                    </div>
+            {/* KPI Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    {t.kpiTotalNotes}
+                  </span>
+                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+                    <FileCheck2 className="w-4 h-4" />
                   </div>
                 </div>
+                <div className="mt-3">
+                  <span className="text-2xl font-black text-white">{sortedNfseItems.length}</span>
+                  <span className="text-xs text-slate-400 ml-1.5">{t.kpiNotesLabel}</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                    {t.kpiIssuedVal}
+                  </span>
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                    <ArrowUpRight className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <span className="text-xl font-black text-emerald-400">
+                    {formatCurrency(totalValPrestado)}
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssuedSub}</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                    {t.kpiReceivedVal}
+                  </span>
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                    <ArrowDownLeft className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <span className="text-xl font-black text-amber-400">
+                    {formatCurrency(totalValTomado)}
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiReceivedSub}</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
+                    {t.kpiTotalIss}
+                  </span>
+                  <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <span className="text-xl font-black text-indigo-400">
+                    {formatCurrency(totalIss)}
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{t.kpiIssSub}</p>
+                </div>
+              </div>
+            </div>
 
                 {/* Toolbar NFS-e */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
@@ -1337,12 +1335,6 @@ export default function AccountingPortalPage() {
                     </table>
                   </div>
                 </div>
-              </>
-            ) : (
-              <div className="bg-slate-900/40 border border-slate-800 p-8 text-center text-slate-400 rounded-2xl">
-                {t.emptyState}
-              </div>
-            )}
           </div>
         )}
 
