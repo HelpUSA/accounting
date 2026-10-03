@@ -135,6 +135,14 @@ export default function AccountingPortalPage() {
   const [cookieConsent, setCookieConsent] = useState<boolean>(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('reset_cookies') || urlParams.has('cookies')) {
+        localStorage.removeItem('helpus_cookie_consent');
+        setCookieConsent(false);
+        return;
+      }
+    }
     const consent = localStorage.getItem('helpus_cookie_consent');
     if (consent === 'true') {
       setCookieConsent(true);
@@ -146,6 +154,11 @@ export default function AccountingPortalPage() {
   const handleAcceptCookies = () => {
     localStorage.setItem('helpus_cookie_consent', 'true');
     setCookieConsent(true);
+  };
+
+  const handleResetCookies = () => {
+    localStorage.removeItem('helpus_cookie_consent');
+    setCookieConsent(false);
   };
 
   // Feedback Form State (Fale Conosco - Ticket ACC-103)
@@ -1822,32 +1835,34 @@ export default function AccountingPortalPage() {
         </div>
       )}
 
-      {/* Cookie Consent Discrete Banner (Exibido Automaticamente ao Abrir o Site no Primeiro Acesso) */}
+      {/* Cookie Consent Modal (Exibido Automaticamente ao Abrir o Site no Primeiro Acesso) */}
       {!cookieConsent && (
-        <div className="fixed bottom-14 left-4 right-4 sm:right-auto sm:left-6 sm:max-w-md z-50 bg-slate-900/95 backdrop-blur border border-slate-700 shadow-2xl p-4 rounded-2xl flex flex-col gap-3 animate-fade-in">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-              <ShieldAlert className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 shadow-2xl p-6 rounded-3xl max-w-md w-full flex flex-col gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h4 className="font-bold text-white text-sm flex items-center gap-1.5">
+                  <span>{t.cookieBannerTitle}</span>
+                </h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {t.cookieBannerText}
+                </p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <h4 className="font-bold text-white text-xs flex items-center gap-1.5">
-                <span>{t.cookieBannerTitle}</span>
-              </h4>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                {t.cookieBannerText}
-              </p>
+            <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
+              <button
+                onClick={() => setShowPrivacyModal(true)}
+                className="text-amber-400 hover:underline transition font-semibold"
+              >
+                {t.privacyPolicyLink}
+              </button>
+              <button onClick={handleAcceptCookies} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-5 py-2 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg shadow-amber-500/20">
+                {t.cookieAcceptBtn}
+              </button>
             </div>
-          </div>
-          <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
-            <button
-              onClick={() => setShowPrivacyModal(true)}
-              className="text-amber-400 hover:underline transition font-medium"
-            >
-              {t.privacyPolicyLink}
-            </button>
-            <button onClick={handleAcceptCookies} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer">
-              {t.cookieAcceptBtn}
-            </button>
           </div>
         </div>
       )}
@@ -1880,6 +1895,14 @@ export default function AccountingPortalPage() {
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>{t.privacyPolicyLink}</span>
+            </button>
+            <span>•</span>
+            <button
+              onClick={handleResetCookies}
+              className="hover:text-amber-400 text-slate-400 underline transition cursor-pointer flex items-center gap-1"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+              <span>Cookies</span>
             </button>
           </div>
 
