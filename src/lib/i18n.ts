@@ -31,6 +31,7 @@ export interface Translations {
   exportExcel: string;
   downloadZip: string;
   generatingZip: string;
+  importXmlBtn: string;
   tableType: string;
   tableNum: string;
   tableDate: string;
@@ -168,6 +169,7 @@ export const translations: Record<Language, Translations> = {
     exportExcel: 'Exportar Planilha Excel',
     downloadZip: 'Baixar Pacote Completo (ZIP)',
     generatingZip: 'Gerando pacote ZIP...',
+    importXmlBtn: 'Importar Lote XML / ZIP (Qualquer Prefeitura do Brasil)',
     tableType: 'Tipo',
     tableNum: 'Nº Documento',
     tableDate: 'Data Emissão',
@@ -303,6 +305,7 @@ export const translations: Record<Language, Translations> = {
     exportExcel: 'Export Excel Spreadsheet',
     downloadZip: 'Download Full Package (ZIP)',
     generatingZip: 'Generating ZIP package...',
+    importXmlBtn: 'Import XML / ZIP Batch (Any Municipal Portal)',
     tableType: 'Type',
     tableNum: 'Doc No.',
     tableDate: 'Issue Date',
@@ -438,6 +441,7 @@ export const translations: Record<Language, Translations> = {
     exportExcel: 'Exportar Planilla Excel',
     downloadZip: 'Descargar Paquete Completo (ZIP)',
     generatingZip: 'Generando paquete ZIP...',
+    importXmlBtn: 'Importar Lote XML / ZIP (Cualquier Municipio)',
     tableType: 'Tipo',
     tableNum: 'Nº Doc.',
     tableDate: 'Fecha Emisión',

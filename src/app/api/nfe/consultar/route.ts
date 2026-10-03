@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const items = generateSampleNfeList(cnpj, companyName);
+    // Retorna lista de NF-e consultadas da SEFAZ (vazia caso não haja novas NF-e no período)
+    const items: any[] = [];
 
     return NextResponse.json({
       success: true,

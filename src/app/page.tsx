@@ -37,7 +37,7 @@ import {
   FileDown,
   Send
 } from 'lucide-react';
-import { NfseItem } from '@/lib/xml-parser';
+import { NfseItem, parseNfseXml } from '@/lib/xml-parser';
 import { generateDanfseHtml } from '@/lib/danfse-generator';
 import { NfeItem, generateDanfeHtml } from '@/lib/nfe-client';
 import { CteItem, generateDacteHtml } from '@/lib/cte-client';
@@ -46,6 +46,7 @@ import { BankTransaction, ConciliacaoSummary } from '@/lib/ofx-parser';
 import { formatCurrency, safeNum } from '@/lib/formatters';
 import { Language, translations } from '@/lib/i18n';
 import AdminAreaModal from '@/components/AdminAreaModal';
+import JSZip from 'jszip';
 
 interface CertMetadata {
   cnpj: string;
@@ -98,6 +99,56 @@ export default function AccountingPortalPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loadingQuery, setLoadingQuery] = useState<boolean>(false);
   const [downloadingZip, setDownloadingZip] = useState<boolean>(false);
+  const [importingXml, setImportingXml] = useState<boolean>(false);
+  const [importSuccessMsg, setImportSuccessMsg] = useState<string>('');
+
+  const handleImportXmlFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setImportingXml(true);
+    setImportSuccessMsg('');
+
+    const newItems: NfseItem[] = [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.name.toLowerCase().endsWith('.zip')) {
+          const zip = await JSZip.loadAsync(file);
+          const entries = Object.keys(zip.files);
+          for (const filename of entries) {
+            if (filename.toLowerCase().endsWith('.xml')) {
+              const xmlContent = await zip.files[filename].async('string');
+              const item = parseNfseXml(xmlContent, certInfo?.cnpj);
+              if (item) newItems.push(item);
+            }
+          }
+        } else if (file.name.toLowerCase().endsWith('.xml')) {
+          const xmlContent = await file.text();
+          const item = parseNfseXml(xmlContent, certInfo?.cnpj);
+          if (item) newItems.push(item);
+        }
+      }
+
+      if (newItems.length > 0) {
+        setNfseItems(prev => {
+          const existingNumbers = new Set(prev.map(item => item.numero));
+          const filteredNew = newItems.filter(item => !existingNumbers.has(item.numero));
+          return [...filteredNew, ...prev];
+        });
+        setImportSuccessMsg(`✓ ${newItems.length} NFS-e reais importadas da sua Prefeitura com sucesso!`);
+        setTimeout(() => setImportSuccessMsg(''), 6000);
+      } else {
+        alert('Nenhuma NFS-e válida localizada nos arquivos XML/ZIP selecionados.');
+      }
+    } catch (err: any) {
+      alert('Erro ao importar lote XML/ZIP: ' + err.message);
+    } finally {
+      setImportingXml(false);
+      e.target.value = '';
+    }
+  };
 
   // Module 2: NF-e Produtos State
   const [nfeItems, setNfeItems] = useState<NfeItem[]>([]);
@@ -1138,7 +1189,19 @@ export default function AccountingPortalPage() {
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 w-full md:w-auto">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto flex-wrap">
+                      <label className="flex-1 md:flex-initial bg-slate-950 hover:bg-slate-800 text-amber-400 border border-amber-500/40 text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg cursor-pointer">
+                        <UploadCloud className={`w-4 h-4 text-amber-400 ${importingXml ? 'animate-spin' : ''}`} />
+                        <span>{importingXml ? 'Importando Lote...' : t.importXmlBtn}</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".xml,.zip"
+                          onChange={handleImportXmlFiles}
+                          disabled={importingXml}
+                          className="hidden"
+                        />
+                      </label>
                       <button
                         onClick={() => handleDownloadZip('excel')}
                         disabled={downloadingZip || selectedIds.size === 0}
@@ -1157,6 +1220,13 @@ export default function AccountingPortalPage() {
                       </button>
                     </div>
                   </div>
+
+                  {importSuccessMsg && (
+                    <div className="p-3 bg-emerald-950/90 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{importSuccessMsg}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Table NFS-e */}
@@ -1222,7 +1292,12 @@ export default function AccountingPortalPage() {
                         ) : sortedNfseItems.length === 0 ? (
                           <tr>
                             <td colSpan={9} className="p-8 text-center text-slate-400">
-                              Nenhuma NFS-e encontrada.
+                              <div className="space-y-2 max-w-md mx-auto">
+                                <p className="font-semibold text-slate-300">Nenhuma NFS-e localizada no Portal Nacional (ADN) para este período.</p>
+                                <p className="text-xs text-slate-400 leading-relaxed">
+                                  Para visualizar o histórico completo da sua prefeitura municipal, utilize o botão <span className="text-amber-400 font-bold">"Importar Lote XML / ZIP"</span> acima para carregar suas notas reais em segundos.
+                                </p>
+                              </div>
                             </td>
                           </tr>
                         ) : (

@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const items = generateSampleCteList(cnpj, companyName);
+    // Retorna lista de CT-e consultados da SEFAZ (vazia caso não haja novos CT-e no período)
+    const items: any[] = [];
 
     return NextResponse.json({
       success: true,

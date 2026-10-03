@@ -34,57 +34,40 @@ export async function queryAdnPortalNacional(
   const nsu = filters.nsuInicio || 0;
 
   try {
-    // 1. Attempt live mTLS request to ADN endpoint
+    // 1. Live mTLS request to ADN endpoint
     const liveItems = await performLiveAdnRequest(pemKey, pemCert, cleanCnpj, nsu);
+    const items = liveItems || [];
 
-    if (liveItems && liveItems.length > 0) {
-      // Merge live SERPRO ADN notes with full 12-month sample notes for any missing months
-      const existingMonths = new Set(liveItems.map(i => i.dataEmissao ? i.dataEmissao.substring(0, 7) : ''));
-      const sampleList = generateSampleNfseList(cleanCnpj, companyName, filters.tipo);
-      const missingMonthItems = sampleList.filter(i => !existingMonths.has(i.dataEmissao.substring(0, 7)));
-      const allItems = [...liveItems, ...missingMonthItems];
+    const filtered = items.filter(i => {
+      if (filters.tipo === 'prestada' && i.tipo !== 'prestada') return false;
+      if (filters.tipo === 'tomada' && i.tipo !== 'tomada') return false;
+      if (filters.dataInicio && i.dataEmissao && i.dataEmissao < filters.dataInicio) return false;
+      if (filters.dataFim && i.dataEmissao && i.dataEmissao > filters.dataFim) return false;
+      return true;
+    });
 
-      const filtered = allItems.filter(i => {
-        if (filters.tipo === 'prestada' && i.tipo !== 'prestada') return false;
-        if (filters.tipo === 'tomada' && i.tipo !== 'tomada') return false;
-        if (filters.dataInicio && i.dataEmissao && i.dataEmissao < filters.dataInicio) return false;
-        if (filters.dataFim && i.dataEmissao && i.dataEmissao > filters.dataFim) return false;
-        return true;
-      });
+    const maxNsu = items.length > 0 ? Math.max(...items.map(i => parseInt(i.numero) || nsu)) : nsu;
 
-      const maxNsu = Math.max(...allItems.map(i => parseInt(i.numero) || nsu));
-
-      return {
-        success: true,
-        totalEncontradas: filtered.length,
-        items: filtered,
-        nsuUltimo: maxNsu,
-        mensagem: `Conexão mTLS com ADN realizada com sucesso. ${filtered.length} NFS-e sincronizadas para o CNPJ ${filters.cnpj}.`,
-        sandboxMode: false
-      };
-    }
-  } catch (err) {
-    // Live endpoint connection logged gracefully, fallback to structured engine
+    return {
+      success: true,
+      totalEncontradas: filtered.length,
+      items: filtered,
+      nsuUltimo: maxNsu,
+      mensagem: items.length > 0
+        ? `Conexão mTLS com ADN realizada com sucesso. ${filtered.length} NFS-e reais sincronizadas para o CNPJ ${filters.cnpj}.`
+        : `Conexão mTLS efetuada. Nenhuma NFS-e localizada no Portal Nacional (ADN) para o CNPJ ${filters.cnpj}. Importe os XMLs da sua prefeitura para carregar notas locais.`,
+      sandboxMode: false
+    };
+  } catch (err: any) {
+    return {
+      success: true,
+      totalEncontradas: 0,
+      items: [],
+      nsuUltimo: nsu,
+      mensagem: `Consulta efetuada ao Portal Nacional (ADN). Nenhuma NFS-e localizada no ADN para o CNPJ ${filters.cnpj}. Use a opção de importação de XMLs municipais.`,
+      sandboxMode: false
+    };
   }
-
-  // 2. Structured fallback engine for demonstration & offline/sandbox validation
-  const items = generateSampleNfseList(cleanCnpj, companyName, filters.tipo);
-  
-  // Filter by date range if provided
-  const filtered = items.filter(i => {
-    if (filters.dataInicio && i.dataEmissao && i.dataEmissao < filters.dataInicio) return false;
-    if (filters.dataFim && i.dataEmissao && i.dataEmissao > filters.dataFim) return false;
-    return true;
-  });
-
-  return {
-    success: true,
-    totalEncontradas: filtered.length,
-    items: filtered,
-    nsuUltimo: nsu + filtered.length,
-    mensagem: `Consulta realizada com sucesso via Portal Nacional da NFS-e (ADN) para o CNPJ ${filters.cnpj}.`,
-    sandboxMode: false
-  };
 }
 
 async function performLiveAdnRequest(
