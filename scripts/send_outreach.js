@@ -1,4 +1,12 @@
+const fs = require('fs');
+const path = require('path');
 const nodemailer = require('nodemailer');
+
+// Carrega variáveis do .env.local se existir
+const envPath = path.join(__dirname, '..', '.env.local');
+if (fs.existsSync(envPath) && typeof process.loadEnvFile === 'function') {
+  process.loadEnvFile(envPath);
+}
 
 // Configuração do Transporter SMTP do Gmail (HelpUS Accounting)
 const transporter = nodemailer.createTransport({
